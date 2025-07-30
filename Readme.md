@@ -2,7 +2,7 @@
 
 ## Setup
 
-NetMock is a tool to swap in mock responses for API calls, for use in offline app configurations and unit tests.
+NetMock is a tool to swap in mock responses for API calls, for use in offline app configurations and unit/UI tests.
 NetMock will inject the mock responses, where defined via nm files, and fall back to live API calls where a NetMock file can't be found.
 
 To make use of NetMock, add NetMockURLProtocol to your URLSessionConfiguration when constructing a URLSession:
@@ -94,12 +94,12 @@ To disambiguate, responses can be named:
 ```
 GET https://api.example.com/example Success 500 SuccessLong
 
-Success 200
+200 Success
 {
   "jsonValue": 123
 }
 ---
-SuccessLong 200
+200 SuccessLong
 {
   "jsonValue": 123,
   "anotherJSONValue": 456
@@ -119,7 +119,7 @@ SuccessLong 200
 
 In unit tests, overrides can be provided using the NetMock API:
 ```swift
-NetMock.override("https://api.example.com/example", responses: "Success", "500", "404", "SuccessLong")
+NetMock.override("https://api.example.com/example", responses: ["Success", "500", "404", "SuccessLong"])
 ```
 
 In UI tests, the UI test target could communicate to the app via launch arguments to build an API like so:

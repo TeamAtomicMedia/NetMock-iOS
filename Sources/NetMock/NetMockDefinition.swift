@@ -77,8 +77,8 @@ struct NetMockDefinition {
             let responseBody = responseLines.dropFirst().joined(separator: "\n")
             // Parse first line as `NAME? STATUSCODE` where NAME? is optionally provided. We also handle providing multiple names, for cases like migrating to new names
             let responseHeaderComponents = responseLines[0].components(separatedBy: " ")
-            let responseCode = responseHeaderComponents.last!
-            for name in responseHeaderComponents.dropLast() {
+            let responseCode = responseHeaderComponents.first!
+            for name in responseHeaderComponents.dropFirst() {
                 self.availableResponses[name.lowercased()] = Response(name: name, statusCode: responseCode, body: responseBody)
                 firstResponse = firstResponse ?? self.availableResponses[name]
             }

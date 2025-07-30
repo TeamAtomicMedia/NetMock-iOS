@@ -1,6 +1,6 @@
 GET local://api.example.com/live Success #Live
 
-Success 200
+200 Success
 {
   "id": 1,
   "name": "John Doe"
