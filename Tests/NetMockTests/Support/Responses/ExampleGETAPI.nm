@@ -1,0 +1,9 @@
+GET https://api.example.com/example
+
+200
+{
+  "id": 1,
+  "name": "John Doe"
+}
+---
+500

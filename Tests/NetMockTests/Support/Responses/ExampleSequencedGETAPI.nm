@@ -1,0 +1,22 @@
+GET https://api.example.com/sequenced Success 500 SuccessLong
+
+Success 200
+{
+  "id": 1,
+  "name": "John Doe"
+}
+---
+SuccessLong 200
+{
+  "id": 1,
+  "name": "Jugemu Jugemu Go-Kō-no-Surikire Kaijari-suigyo no Suigyō-matsu Unrai-matsu Fūrai-matsu Kū-Neru Tokoro ni Sumu Tokoro Yaburakōji no Burakōji Paipo Paipo Paipo no Shūringan Shūringan no Gūrindai Gūrindai no Ponpokopii no Ponpokonaa no Chōkyūmei no Chōsuke"
+}
+---
+404
+---
+418
+{
+  "example": "abc"
+}
+---
+500

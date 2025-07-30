@@ -1,0 +1,6 @@
+POST https://api.example.com/example
+
+201
+{
+  "success": true
+}
