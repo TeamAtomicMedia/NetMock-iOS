@@ -63,8 +63,8 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - responses: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: String = "GET", _ url: URL, responses: String...) {
-        override(method, url, responses: responses)
+    public func override(_ method: String = "GET", _ url: URL, response: String) {
+        override(method, url, responses: [response])
     }
     
     /// Applies an override to the response for a given URL and optionally HTTP request method. The override takes the form of a list of identifiers or status codes defined in the nm file for the URL.
