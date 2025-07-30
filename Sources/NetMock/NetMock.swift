@@ -7,12 +7,19 @@ import OSLog
 private let netMockSetupLogger = Logger(subsystem: "NetMock", category: "load")
 internal let netMockRequestLogger = Logger(subsystem: "NetMock", category: "request")
 
+/// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {
     private var definitions: [NetMockDefinition.Request: NetMockDefinition] = [:]
     
+    /// The NetMock instance used by NetMockURLProtocol to keep tracks of mock responses to substitute. Must be initialised before use.
     public static let shared = NetMock()
+    
     // Ideally the client could initialise NetMock itself and create URLProtocol with a reference, but URLProtocol can't be initialised directly so we have to use singleton pattern to provide access to NetMock within URLProtocol.
     private init() {}
+    
+    /// Loads the nm files in the given bundle.
+    ///
+    /// - Parameter bundle: Typically `.main` is fine, but `.module` may be preferred if nm files are included within a package.
     public func initialise(bundle: Bundle = .main) {
         definitions.removeAll()
         guard let urls = bundle.urls(forResourcesWithExtension: "nm", subdirectory: nil) else {
@@ -34,18 +41,65 @@ public actor NetMock {
         }
     }
     
-    public func override(_ method: String = "GET", _ url: URL, responses: String...) {
-        override(method, url, responses: responses)
-    }
-    public func override(_ method: String = "GET", _ url: URL, responses: [String]) {
-        let request = NetMockDefinition.Request(method: method, url: url)
-        if responses.isEmpty {
-            definitions[request] = nil
-        } else {
-            definitions[request]?.override(responses)
+    /// Represents a NetMock override which can change the responses returned to an alternative defined in the nm file.
+    public struct Override {
+        /// The HTTP request method to observe. Defaults to "GET".
+        public var method: String
+        /// The URL whose response will be overridden.
+        public var url: URL
+        /// A list of response names or codes from the nm file to use as the response.
+        public var responses: [String]
+        
+        public init(method: String = "GET", url: URL, responses: [String]) {
+            self.method = method
+            self.url = url
+            self.responses = responses
         }
     }
     
+    /// Applies an override to the response for a given URL and optionally HTTP request method. The override takes the form of a list of identifiers or status codes defined in the nm file for the URL.
+    ///
+    /// - Parameters:
+    ///   - method: The HTTP request method to observe. Defaults to "GET".
+    ///   - url: The URL whose response will be overridden.
+    ///   - responses: A list of response names or codes from the nm file to use as the response.
+    public func override(_ method: String = "GET", _ url: URL, responses: String...) {
+        override(method, url, responses: responses)
+    }
+    
+    /// Applies an override to the response for a given URL and optionally HTTP request method. The override takes the form of a list of identifiers or status codes defined in the nm file for the URL.
+    ///
+    /// - Parameters:
+    ///   - method: The HTTP request method to observe. Defaults to "GET".
+    ///   - url: The URL whose response will be overridden.
+    ///   - responses: A list of response names or codes from the nm file to use as the response.
+    public func override(_ method: String = "GET", _ url: URL, responses: [String]) {
+        applyOverride(Override(method: method, url: url, responses: responses))
+    }
+    
+    /// Applies an override to the response for a given URL and optionally HTTP request method. The override takes the form of a list of identifiers or status codes defined in the nm file for the URL.
+    ///
+    /// - Parameter overrides: The list of overrides to apply.
+    public func applyOverrides(_ overrides: [Override]) {
+        for override in overrides {
+            applyOverride(override)
+        }
+    }
+    
+    /// Applies an override to the response for a given URL and optionally HTTP request method. The override takes the form of a list of identifiers or status codes defined in the nm file for the URL.
+    ///
+    /// - Parameter override: The override to apply.
+    public func applyOverride(_ override: Override) {
+        let request = NetMockDefinition.Request(method: override.method, url: override.url)
+        if override.responses.isEmpty {
+            definitions[request] = nil
+        } else {
+            definitions[request]?.override(override.responses)
+        }
+    }
+    
+    // Used by URLProtocol to decide whether to handle the request.
+    // If a nm file hasn't been provided or couldn't be read, this should return false.
     func hasResponse(for request: URLRequest) -> Bool {
         guard
             let method = request.httpMethod?.uppercased(),
@@ -58,6 +112,9 @@ public actor NetMock {
             return false
         }
     }
+    
+    // Used by URLProtocol to generate a response.
+    // Logs in DEBUG if an unexpected failure occurs.
     func mockResponse(for request: URLRequest) -> (response: HTTPURLResponse, body: String)? {
         guard
             let method = request.httpMethod?.uppercased(),
