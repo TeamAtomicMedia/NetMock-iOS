@@ -42,7 +42,7 @@ public actor NetMock {
     }
     
     /// Represents a NetMock override which can change the responses returned to an alternative defined in the nm file.
-    public struct Override {
+    public struct Override: Codable {
         /// The HTTP request method to observe. Defaults to "GET".
         public var method: String
         /// The URL whose response will be overridden.
