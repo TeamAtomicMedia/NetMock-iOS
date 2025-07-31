@@ -21,6 +21,11 @@ struct Tests {
         try await assertParseFailure(await network.exampleGETFailure()) // Second call should return the same response
     }
     
+    @Test func exampleGetNoInternetFailsAsExpected() async throws {
+        try await assertNoInternet(await network.exampleNoInternetAPI())
+        try await assertNoInternet(await network.exampleNoInternetAPI()) // Second call should return the same response
+    }
+    
     @Test func examplePostIsLoaded() async throws {
         #expect(try await network.examplePOST("123").success)
         #expect(try await network.examplePOST("123").success)
@@ -70,6 +75,13 @@ struct Tests {
         assertGetResponse(try await network.exampleGETFailure())
     }
     
+    @Test func overridesCanMakeNoInternet() async throws {
+        await NetMock.shared.override("GET", NetworkAPI.exampleFailureAPI, response: "-1009")
+        
+        try await assertNoInternet(await network.exampleNoInternetAPI())
+        try await assertNoInternet(await network.exampleNoInternetAPI())
+    }
+    
     func assertParseFailure(_ response: @autoclosure () async throws -> Any, sourceLocation: SourceLocation = #_sourceLocation) async rethrows {
         do {
             let _ = try await response()
@@ -84,6 +96,15 @@ struct Tests {
             let _ = try await response()
             Issue.record("Call succeeded so #Live was skipped or not respected")
         } catch URLError.unsupportedURL {
+            // Continue
+        }
+    }
+    
+    func assertNoInternet(_ response: @autoclosure () async throws -> Any, sourceLocation: SourceLocation = #_sourceLocation) async rethrows {
+        do {
+            let _ = try await response()
+            Issue.record("Call succeeded so -1009 (No Internet code) was skipped or not respected")
+        } catch let error as URLError where error.code == .notConnectedToInternet {
             // Continue
         }
     }

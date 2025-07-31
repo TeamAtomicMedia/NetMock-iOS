@@ -115,6 +115,14 @@ GET https://api.example.com/example Success 500 SuccessLong
 500
 ```
 
+## URLError
+
+To simulate a networking error, such as `URLError(.notConnectedToInternet)`, provide the corresponding error code in the response sequence:
+```
+GET https://api.example.com/example -1009
+```
+All URLError error codes are negative, while HTTP response codes are positive, so this is not ambiguous. Response definitions with negative status codes will be ignored.
+
 ## Testing & Overrides
 
 In unit tests, overrides can be provided using the NetMock API:

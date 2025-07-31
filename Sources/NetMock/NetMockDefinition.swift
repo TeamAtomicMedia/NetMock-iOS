@@ -59,31 +59,34 @@ struct NetMockDefinition {
             url: url
         )
         
+        var firstResponse: Response? = nil
         // Advance to responses
-        guard lines.count > 3, lines[1].isEmpty else {
+        guard lines.count < 2 || lines[1].isEmpty else {
             throw LoadError.invalidStructure
         }
-        
-        let responseDefinition = lines.dropFirst(2).joined(separator: "\n")
-        
-        // Parse RESPONSES
-        let responses = responseDefinition.components(separatedBy: "\n---\n")
-        self.availableResponses = Dictionary(minimumCapacity: responses.count)
-        var firstResponse: Response? = nil
-        for response in responses {
-            // Allow whitespace before & after each response
-            let response = response.trimmingCharacters(in: .whitespacesAndNewlines)
-            let responseLines = response.components(separatedBy: "\n")
-            let responseBody = responseLines.dropFirst().joined(separator: "\n")
-            // Parse first line as `NAME? STATUSCODE` where NAME? is optionally provided. We also handle providing multiple names, for cases like migrating to new names
-            let responseHeaderComponents = responseLines[0].components(separatedBy: " ")
-            let responseCode = responseHeaderComponents.first!
-            for name in responseHeaderComponents.dropFirst() {
-                self.availableResponses[name.lowercased()] = Response(name: name, statusCode: responseCode, body: responseBody)
-                firstResponse = firstResponse ?? self.availableResponses[name]
+        if lines.count > 3 {
+            let responseDefinition = lines.dropFirst(2).joined(separator: "\n")
+            
+            // Parse RESPONSES
+            let responses = responseDefinition.components(separatedBy: "\n---\n")
+            self.availableResponses = Dictionary(minimumCapacity: responses.count)
+            for response in responses {
+                // Allow whitespace before & after each response
+                let response = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                let responseLines = response.components(separatedBy: "\n")
+                let responseBody = responseLines.dropFirst().joined(separator: "\n")
+                // Parse first line as `NAME? STATUSCODE` where NAME? is optionally provided. We also handle providing multiple names, for cases like migrating to new names
+                let responseHeaderComponents = responseLines[0].components(separatedBy: " ")
+                let responseCode = responseHeaderComponents.first!
+                for name in responseHeaderComponents.dropFirst() {
+                    self.availableResponses[name.lowercased()] = Response(name: name, statusCode: responseCode, body: responseBody)
+                    firstResponse = firstResponse ?? self.availableResponses[name]
+                }
+                self.availableResponses[responseCode] = Response(name: responseCode, statusCode: responseCode, body: responseBody)
+                firstResponse = firstResponse ?? self.availableResponses[responseCode]
             }
-            self.availableResponses[responseCode] = Response(name: responseCode, statusCode: responseCode, body: responseBody)
-            firstResponse = firstResponse ?? self.availableResponses[responseCode]
+        } else {
+            self.availableResponses = [:]
         }
         
         // Parse RESPONSE SEQUENCING from header, or default to first response
@@ -104,7 +107,11 @@ struct NetMockDefinition {
     }
     
     func response(forName name: String) -> Response? {
-        availableResponses[name.lowercased()]
+        if name.hasPrefix("-") {
+            Response(name: name, statusCode: name, body: "")
+        } else {
+            availableResponses[name.lowercased()]
+        }
     }
     /// Returns the next response if a sequence has been set, or the default response. Only returns `nil` if no response definitions are found, or use of a live API call has been specifically requested.
     mutating func nextResponse() -> Response? {

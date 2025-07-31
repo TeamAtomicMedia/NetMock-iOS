@@ -106,16 +106,20 @@ public actor NetMock {
             let url = request.url
         else { return false }
         let netMockRequest = NetMockDefinition.Request(method: method, url: url)
-        if let definition = definitions[netMockRequest] {
+        if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
             return definition.responseSequence.first != "#Live" // If we see #Live in a sequence, don't intercept
         } else {
             return false
         }
     }
     
+    enum Response {
+        case success(response: HTTPURLResponse, body: String)
+        case urlError(_ code: Int)
+    }
     // Used by URLProtocol to generate a response.
     // Logs in DEBUG if an unexpected failure occurs.
-    func mockResponse(for request: URLRequest) -> (response: HTTPURLResponse, body: String)? {
+    func mockResponse(for request: URLRequest) -> Response? {
         guard
             let method = request.httpMethod?.uppercased(),
             let url = request.url
@@ -147,6 +151,10 @@ public actor NetMock {
             return nil
         }
         
+        if statusCode < 0 {
+            return .urlError(statusCode)
+        }
+        
         guard let httpResponse = HTTPURLResponse(
             url: url,
             statusCode: statusCode,
@@ -162,7 +170,7 @@ public actor NetMock {
             return nil
         }
         
-        return (
+        return .success(
             response: httpResponse,
             body: response.body
         )

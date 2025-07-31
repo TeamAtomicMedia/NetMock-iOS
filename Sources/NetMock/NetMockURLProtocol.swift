@@ -44,13 +44,18 @@ public class NetMockURLProtocol: URLProtocol {
     }
     
     override public func startLoading() {
-        guard let (response, body) = Self.withNetMock({ [request] in $0.mockResponse(for: request) }) else {
+        guard let response = Self.withNetMock({ [request] in $0.mockResponse(for: request) }) else {
             client?.urlProtocol(self, didFailWithError: NetMockError.failedToGenerateResponse)
             return
         }
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: body.data(using: .utf8)!)
-        client?.urlProtocolDidFinishLoading(self)
+        switch response {
+        case .success(let response, let body):
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: body.data(using: .utf8)!)
+            client?.urlProtocolDidFinishLoading(self)
+        case .urlError(let code):
+            client?.urlProtocol(self, didFailWithError: URLError(.init(rawValue: code)))
+        }
     }
     
     override public func stopLoading() {}
