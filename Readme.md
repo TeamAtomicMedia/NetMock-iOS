@@ -121,7 +121,7 @@ To simulate a networking error, such as `URLError(.notConnectedToInternet)`, pro
 ```
 GET https://api.example.com/example -1009
 ```
-All URLError error codes are negative, while HTTP response codes are positive, so this is not ambiguous. Response definitions with negative status codes will be ignored.
+All URLError error codes are negative, while HTTP response codes are positive, so this is not ambiguous. Response body definitions for negative status codes will be ignored.
 
 ## Testing & Overrides
 
