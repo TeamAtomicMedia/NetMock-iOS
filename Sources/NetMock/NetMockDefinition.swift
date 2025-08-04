@@ -34,14 +34,14 @@ struct NetMockDefinition {
     /// The available responses from the NetMock configuration file. These will be identified by status code, and by the name(s) if provided. A provided name can be used to disambiguate when multiple responses are provided for a status code, otherwise the first defined response for the status code will be used.
     private(set) var availableResponses: [String: Response]
     
-    init(fileURL: URL) throws {
+    init(fileURL: URL, urlParser: (String) -> URL?) throws {
         let data = try Data(contentsOf: fileURL)
         guard let contents = String(data: data, encoding: .utf8) else {
             throw LoadError.invalidFileFormat
         }
-        try self.init(contents)
+        try self.init(contents, urlParser: urlParser)
     }
-    init(_ string: String) throws {
+    init(_ string: String, urlParser: (String) -> URL?) throws {
         var lines = string.components(separatedBy: "\n")
         
         // Parse VERSION STRING
@@ -65,7 +65,7 @@ struct NetMockDefinition {
         guard headerComponents.count >= 2 else {
             throw LoadError.invalidHeaderStructure
         }
-        guard let url = URL(string: headerComponents[1]) else {
+        guard let url = urlParser(headerComponents[1]) else {
             throw LoadError.invalidURL
         }
         self.request = Request(

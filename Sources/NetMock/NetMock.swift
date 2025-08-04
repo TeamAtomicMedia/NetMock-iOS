@@ -17,6 +17,20 @@ public actor NetMock {
     // Ideally the client could initialise NetMock itself and create URLProtocol with a reference, but URLProtocol can't be initialised directly so we have to use singleton pattern to provide access to NetMock within URLProtocol.
     private init() {}
     
+    private var urlParser: (String) -> URL? = URL.init(string:)
+    /// By default, NetMock will attempt to parse URLs in nm files directly to a URL.
+    ///
+    /// Use this method to intercept the URL parsing to perform a custom mapping.
+    /// The latest added parser will be attempted first, falling back to previous parsers and finally the NetMock default.
+    ///
+    /// For example, you can use this to convert API paths to a full URL, where the domain varies by app configuration.
+    /// - Parameter parser: The URL parser that will become the new initially attempted parser.
+    public func applyCustomURLParsing(_ parser: @escaping (String) -> URL?) {
+        self.urlParser = { [oldValue = self.urlParser] string in
+            parser(string) ?? oldValue(string)
+        }
+    }
+    
     /// Loads the nm files in the given bundle.
     ///
     /// - Parameter bundle: Typically `.main` is fine, but `.module` may be preferred if nm files are included within a package.
@@ -28,7 +42,7 @@ public actor NetMock {
         definitions.reserveCapacity(urls.count)
         for url in urls {
             do {
-                let definition = try NetMockDefinition(fileURL: url)
+                let definition = try NetMockDefinition(fileURL: url, urlParser: urlParser)
                 self.definitions[definition.request] = definition
             } catch {
                 netMockSetupLogger.debug(
