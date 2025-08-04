@@ -42,11 +42,25 @@ struct NetMockDefinition {
         try self.init(contents)
     }
     init(_ string: String) throws {
+        var lines = string.components(separatedBy: "\n")
+        
+        // Parse VERSION STRING
+        
+        let netMockVersion: String
+        if let version = lines.first, version.hasPrefix("NetMock") {
+            lines.removeFirst()
+            netMockVersion = version.components(separatedBy: " ").last!
+        } else {
+            netMockVersion = "1.0.0"
+        }
+        _ = netMockVersion // Use when making breaking changes to ensure backwards-compatibility
+        
         // Parse METHOD and URL
-        let lines = string.components(separatedBy: "\n")
+        
         guard let header = lines.first else {
             throw LoadError.invalidStructure
         }
+        lines.removeFirst()
         let headerComponents = header.components(separatedBy: " ")
         guard headerComponents.count >= 2 else {
             throw LoadError.invalidHeaderStructure
@@ -59,25 +73,36 @@ struct NetMockDefinition {
             url: url
         )
         
-        var firstResponse: Response? = nil
-        // Advance to responses
-        guard lines.count < 2 || lines[1].isEmpty else {
-            throw LoadError.invalidStructure
+        // Parse BLANK LINE if responses are defined
+        
+        if let nextLine = lines.first {
+            guard nextLine.isEmpty else {
+                throw LoadError.invalidStructure
+            }
+            lines.removeFirst()
         }
-        if lines.count > 3 {
-            let responseDefinition = lines.dropFirst(2).joined(separator: "\n")
+        
+        // Parse RESPONSES
+        
+        var firstResponse: Response? = nil
+        if !lines.isEmpty {
+            let responseDefinition = lines.joined(separator: "\n")
             
-            // Parse RESPONSES
             let responses = responseDefinition.components(separatedBy: "\n---\n")
             self.availableResponses = Dictionary(minimumCapacity: responses.count)
             for response in responses {
                 // Allow whitespace before & after each response
                 let response = response.trimmingCharacters(in: .whitespacesAndNewlines)
                 let responseLines = response.components(separatedBy: "\n")
-                let responseBody = responseLines.dropFirst().joined(separator: "\n")
                 // Parse first line as `NAME? STATUSCODE` where NAME? is optionally provided. We also handle providing multiple names, for cases like migrating to new names
-                let responseHeaderComponents = responseLines[0].components(separatedBy: " ")
-                let responseCode = responseHeaderComponents.first!
+                guard
+                    let responseHeaderComponents = responseLines.first?.components(separatedBy: " "),
+                    let responseCode = responseHeaderComponents.first,
+                    !responseCode.isEmpty
+                else {
+                    throw LoadError.invalidResponseStructure
+                }
+                let responseBody = responseLines.dropFirst().joined(separator: "\n")
                 for name in responseHeaderComponents.dropFirst() {
                     self.availableResponses[name.lowercased()] = Response(name: name, statusCode: responseCode, body: responseBody)
                     firstResponse = firstResponse ?? self.availableResponses[name]
@@ -88,8 +113,10 @@ struct NetMockDefinition {
         } else {
             self.availableResponses = [:]
         }
+        lines.removeAll()
         
         // Parse RESPONSE SEQUENCING from header, or default to first response
+        
         let responseOverride = headerComponents.dropFirst(2)
         if responseOverride.isEmpty, let firstResponse {
             self.responseSequence = [firstResponse.name]
