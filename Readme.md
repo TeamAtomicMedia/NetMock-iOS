@@ -139,3 +139,45 @@ AppRobot()
 ## Live responses
 
 Specifying an identifier of "#Live" will tell the test to perform the real API call. Sequencing #Live is not supported.
+
+
+## Justification of approach
+
+NetMock performs injection client-side, for a number of reasons:
+
+- We can inject responses we want, and sequence as needed, which we can't making actual requests to a live API.
+- We can make use of JSON responses captured during implementation & testing, with no code needed, which saves time compared to constructing responses programmatically.
+- We can inject responses for domains outside of our control without the need for a self-hosted DNS, and without the need to mimic transport security protections, providing an advantage to our scope of coverage compared to an localhost server.
+- NetMock achieves a lot of capability with very little actual implementation code, making it extremely maintainable to anyone with a little iOS experience, while other approaches could get significantly more complex.
+
+### Injection
+
+We can use NetMock for system calls and webviews:
+```swift
+URLProtocol.registerClass(NetMockURLProtocol.self)
+```
+
+We can use NetMock for any calls where we have access to the URLSession:
+```swift
+var urlSessionConfig = URLSessionConfiguration.ephemeral
+urlSessionConfig.protocolClasses = [NetMockURLProtocol.self]
+let urlSession = URLSession(configuration: urlSessionConfig)
+```
+
+If we don't have access to the URLSession point of construction, our options are more limited. If we have a Local configuration, it is still technically possible to change out the default globally in this configuration using swizzling, if we so desire:
+```swift
+#if LOCAL
+private extension URLSessionConfiguration {
+    @objc class var defaultWithNetMock: URLSessionConfiguration {
+        let config = URLSessionConfiguration.defaultWithNetMock // Now has .default's implementation
+        config.protocolClasses = [NetMockURLProtocol.self] + (config.protocolClasses ?? [])
+        return config
+    }
+    static func swizzleDefault() {
+        let original = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: defaultWithNetMock))!
+        let replacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: `default`))!
+        method_exchangeImplementations(original, replacement)
+    }
+}
+#endif
+```
