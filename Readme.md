@@ -115,13 +115,36 @@ GET https://api.example.com/example Success 500 SuccessLong
 500
 ```
 
-## URLError
+
+### Live responses
+
+Specifying an identifier of "#Live" will tell the test to perform the real API call. Sequencing calls after #Live is not supported.
+
+`ExampleGETAPI.nm`
+```
+GET https://api.example.com/example 200 #Live
+200
+{
+}
+```
+
+### URLError
 
 To simulate a networking error, such as `URLError(.notConnectedToInternet)`, provide the corresponding error code in the response sequence:
+`ExampleGETAPI.nm`
 ```
 GET https://api.example.com/example -1009
 ```
 All URLError error codes are negative, while HTTP response codes are positive, so this is not ambiguous. Response body definitions for negative status codes will be ignored.
+
+### Versioning
+
+As of version 2.1.1, NetMock has forward-compatibility for breaking changes, through an optional versioning header:
+`ExampleGETAPI.nm`
+```
+NetMock 2.1.1
+GET https://api.example.com/example
+```
 
 ## Testing & Overrides
 
@@ -135,11 +158,6 @@ In UI tests, the UI test target could communicate to the app via launch argument
 AppRobot()
     .netmockOverride("https://api.example.com/example", responses: "Success", "500", "404", "SuccessLong")
 ```
-
-## Live responses
-
-Specifying an identifier of "#Live" will tell the test to perform the real API call. Sequencing #Live is not supported.
-
 
 ## Justification of approach
 
