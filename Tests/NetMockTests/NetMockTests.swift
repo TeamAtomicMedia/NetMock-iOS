@@ -82,6 +82,22 @@ struct Tests {
         try await assertNoInternet(await network.exampleNoInternetAPI())
     }
     
+    @Test func exampleGetIsLoadedWithURLMapping() async throws {
+        await NetMock.shared.applyCustomURLParsing { urlString in
+            if !urlString.hasPrefix("https://") {
+                return URL(string: "https://api.example.com/" + urlString)
+            }
+            return nil
+        }
+        await NetMock.shared.initialise(bundle: .module)
+        assertGetResponse(try await network.exampleURLMappedGET())
+        assertGetResponse(try await network.exampleURLMappedGET()) // Second call should return the same response
+        assertGetResponse(try await network.exampleGET())
+        assertGetResponse(try await network.exampleGET()) // Second call should return the same response
+        try await assertParseFailure(try await network.exampleGETFailure())
+        try await assertParseFailure(try await network.exampleGETFailure()) // Second call should return the same response
+    }
+    
     func assertParseFailure(_ response: @autoclosure () async throws -> Any, sourceLocation: SourceLocation = #_sourceLocation) async rethrows {
         do {
             let _ = try await response()

@@ -54,4 +54,10 @@ class NetworkAPI {
     func exampleNoInternetAPI() async throws {
         _ = try await session.data(from: Self.noInternetAPI) // This is expected to throw URLError(.notConnectedToInternet)
     }
+    
+    static let urlMappedAPI = URL(string: "https://api.example.com/urlmapped")!
+    func exampleURLMappedGET() async throws -> ExampleGETResponse {
+        let (data, _) = try await session.data(from: Self.urlMappedAPI)
+        return try JSONDecoder().decode(ExampleGETResponse.self, from: data)
+    }
 }

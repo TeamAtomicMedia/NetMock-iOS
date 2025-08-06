@@ -22,6 +22,7 @@ public actor NetMock {
     ///
     /// Use this method to intercept the URL parsing to perform a custom mapping.
     /// The latest added parser will be attempted first, falling back to previous parsers and finally the NetMock default.
+    /// The new parser will be applied when NetMock.initialise() is next called.
     ///
     /// For example, you can use this to convert API paths to a full URL, where the domain varies by app configuration.
     /// - Parameter parser: The URL parser that will become the new initially attempted parser.

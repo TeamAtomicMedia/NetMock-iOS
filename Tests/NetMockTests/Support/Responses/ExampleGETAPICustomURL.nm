@@ -1,0 +1,9 @@
+GET urlmapped
+
+200
+{
+  "id": 1,
+  "name": "John Doe"
+}
+---
+500
