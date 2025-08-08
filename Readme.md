@@ -172,7 +172,10 @@ NetMock.shared.applyCustomURLParsing { urlString in
     }
     return nil // Use NetMock default behaviour, or previously set custom parsing
 }
+NetMock.shared.initialise()
 ```
+
+Parsing is performed during the call to `initialise`, so you must ensure this call is made prior to initialisation.
 
 With this setup, we can simplify our call to `https://api.example.com/example`:
 
