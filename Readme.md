@@ -61,9 +61,11 @@ GET https://api.example.com/example
 500
 ```
 
+The first response in the list will be used by default.
+
 ### Response sequences
 
-The first response will be used by default, but a response or sequence of responses can be configured:
+The first response will be used by default, but a different default, or a sequence of responses can be configured. The last item in the sequence will be repeated if subsequent calls are made.
 
 `ExampleGETAPI.nm`
 ```
@@ -88,7 +90,7 @@ In this example, 200 will be used for the first call, then 500, then 200 will be
 
 ### Response disambiguation
 
-To disambiguate, responses can be named:
+To disambiguate when multiple responses share a status code, responses can be named:
 
 `ExampleGETAPI.nm`
 ```
@@ -115,10 +117,11 @@ GET https://api.example.com/example Success 500 SuccessLong
 500
 ```
 
+NetMock supports adding multiple names for a single response, separated by spaces, which could be useful when performing a naming migration, or when two use-cases happen to match.
 
 ### Live responses
 
-Specifying an identifier of "#Live" will tell the test to perform the real API call. Sequencing calls after #Live is not supported.
+Specifying an identifier of "#Live" will tell the test to perform the real API call. Sequencing calls after #Live is not supported, #Live must always be positioned at the end of the sequence.
 
 `ExampleGETAPI.nm`
 ```
@@ -128,23 +131,28 @@ GET https://api.example.com/example 200 #Live
 }
 ```
 
-### URLError
+### Network availability errors / URLError
+
+Networking errors occur when the server could not be reached, meaning no HTTP status code is available or relevant. These could include no internet, transport security failures, timeouts, and more.
 
 To simulate a networking error, such as `URLError(.notConnectedToInternet)`, provide the corresponding error code in the response sequence:
 `ExampleGETAPI.nm`
 ```
 GET https://api.example.com/example -1009
 ```
-All URLError error codes are negative, while HTTP response codes are positive, so this is not ambiguous. Response body definitions for negative status codes will be ignored.
+
+By design, all URLError error codes are negative, while HTTP response codes are positive, so this is not ambiguous. Response body definitions for negative status codes will be ignored.
 
 ### Versioning
 
-As of version 2.1.1, NetMock has forward-compatibility for breaking changes, through an optional versioning header:
+As of version 2.1.1, the NetMock file format support versioning, to make them forward-compatible with breaking changes to the file schema. This is achieved through an optional versioning header:
 `ExampleGETAPI.nm`
 ```
 NetMock 2.1.1
 GET https://api.example.com/example
 ```
+
+Breaking changes to the file format should generally be accompanied by a major version bump to the package, so in theory the major version specified by a file should be all that matters if we make use of this in future. However, minor versions are still parsed.
 
 ## Testing & Overrides
 
@@ -159,13 +167,17 @@ AppRobot()
     .netmockOverride("https://api.example.com/example", responses: "Success", "500", "404", "SuccessLong")
 ```
 
+Note that consecutively run UI tests may preserve launch arguments, so the API used should account for this in resetting launch arguments even when no overrides are specified.
+
 ## Justification of approach
 
 NetMock performs injection client-side, for a number of reasons:
 
-- We can inject responses we want, and sequence as needed, which we can't making actual requests to a live API.
+- We can inject responses we want, and sequence them as needed, which we can't making actual requests to a live API.
+- We can simulate a range of API error responses, which a mock API may not support.
+- We can simulate network availability errors, which is just not possible via a mock API.
 - We can make use of JSON responses captured during implementation & testing, with no code needed, which saves time compared to constructing responses programmatically.
-- We can inject responses for domains outside of our control without the need for a self-hosted DNS, and without the need to mimic transport security protections, providing an advantage to our scope of coverage compared to an localhost server.
+- We can inject responses for calls to domains outside of our control without the need for a self-hosted DNS, and without the need to mimic transport security protections, providing an advantage to our scope of coverage compared to a localhost server.
 - NetMock achieves a lot of capability with very little actual implementation code, making it extremely maintainable to anyone with a little iOS experience, while other approaches could get significantly more complex.
 
 ### Injection
