@@ -137,6 +137,7 @@ GET https://api.example.com/example 200 #Live
 Networking errors occur when the server could not be reached, meaning no HTTP status code is available or relevant. These could include no internet, transport security failures, timeouts, and more.
 
 To simulate a networking error, such as `URLError(.notConnectedToInternet)`, provide the corresponding error code in the response sequence:
+
 `ExampleGETAPI.nm`
 ```
 GET https://api.example.com/example -1009
@@ -147,6 +148,7 @@ By design, all URLError error codes are negative, while HTTP response codes are 
 ### Versioning
 
 As of version 2.1.1, the NetMock file format support versioning, to make them forward-compatible with breaking changes to the file schema. This is achieved through an optional versioning header:
+
 `ExampleGETAPI.nm`
 ```
 NetMock 2.1.1
@@ -173,6 +175,7 @@ NetMock.shared.applyCustomURLParsing { urlString in
 ```
 
 With this setup, we can simplify our call to `https://api.example.com/example`:
+
 `ExampleGETAPI.nm`
 ```
 GET example
