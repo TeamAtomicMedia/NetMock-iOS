@@ -126,6 +126,7 @@ Specifying an identifier of "#Live" will tell the test to perform the real API c
 `ExampleGETAPI.nm`
 ```
 GET https://api.example.com/example 200 #Live
+
 200
 {
 }
@@ -154,7 +155,32 @@ GET https://api.example.com/example
 
 Breaking changes to the file format should generally be accompanied by a major version bump to the package, so in theory the major version specified by a file should be all that matters if we make use of this in future. However, minor versions are still parsed.
 
-## Testing & Overrides
+## Further configuration
+
+### Custom URL handling
+
+Many projects have a primary API which the apps calls, such as `https://api.example.com/`. In these cases, it may be desirable to maintain a single source of truth for this base URL, and specify only the API path in NetMock files.
+
+NetMock allows a custom URL interpretation step to be inserted before its own parsing, allowing an app to specify its own schema for URLs. In the simple case, an app could check if the URL string is a full `https://` URL, and inject the API URL if not.
+
+```swift
+NetMock.shared.applyCustomURLParsing { urlString in
+    if !urlString.hasPrefix("https://") {
+        return URL(string: "https://api.example.com/" + urlString) // Example use-case: Inject API domain to API path specified in NetMock file
+    }
+    return nil // Use NetMock default behaviour, or previously set custom parsing
+}
+```
+
+With this setup, we can simplify our call to `https://api.example.com/example`:
+`ExampleGETAPI.nm`
+```
+GET example
+
+200
+```
+
+### Testing & Overrides
 
 In unit tests, overrides can be provided using the NetMock API:
 ```swift
