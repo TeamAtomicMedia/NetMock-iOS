@@ -59,4 +59,54 @@ public class NetMockURLProtocol: URLProtocol {
     }
     
     override public func stopLoading() {}
+    
+    public static func applyGlobally() {
+        // WebViews and system
+        URLProtocol.registerClass(NetMockURLProtocol.self)
+        
+        // Apply to all URLSessions created in project
+        let configDefaultOriginal = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.defaultBypassingNetMock))!
+        let configDefaultReplacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.`default`))!
+        method_exchangeImplementations(configDefaultOriginal, configDefaultReplacement)
+        
+        let configEphemeralOriginal = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.ephemeralBypassingNetMock))!
+        let configEphemeralReplacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.ephemeral))!
+        method_exchangeImplementations(configEphemeralOriginal, configEphemeralReplacement)
+        
+        let sessionSharedOriginal = class_getClassMethod(URLSession.self, #selector(getter: URLSession.sharedBypassingNetMock))!
+        let sessionSharedReplacement = class_getClassMethod(URLSession.self, #selector(getter: URLSession.shared))!
+        method_exchangeImplementations(sessionSharedOriginal, sessionSharedReplacement)
+    }
+}
+
+extension URLSessionConfiguration {
+    /// Use this method to get `URLSessionConfiguration.default` without NetMock applied.
+    /// This method must be called after `NetMockURLProtocol.applyGlobally()`.
+    @objc public class var defaultBypassingNetMock: URLSessionConfiguration {
+        // The implementation to be used post-swizzle.
+        let config = URLSessionConfiguration.defaultBypassingNetMock // Now has .default's implementation. Pre-swizzle, this will infinitely recurse and stack overflow.
+        config.protocolClasses = [NetMockURLProtocol.self] + (config.protocolClasses ?? [])
+        return config
+    }
+    /// Use this method to get `URLSessionConfiguration.ephemeral` without NetMock applied.
+    /// This method must be called after `NetMockURLProtocol.applyGlobally()`.
+    @objc public class var ephemeralBypassingNetMock: URLSessionConfiguration {
+        // The implementation to be used post-swizzle.
+        let config = URLSessionConfiguration.ephemeralBypassingNetMock // Now has .ephemeral's implementation. Pre-swizzle, this will infinitely recurse and stack overflow.
+        config.protocolClasses = [NetMockURLProtocol.self] + (config.protocolClasses ?? [])
+        return config
+    }
+}
+
+extension URLSession {
+    /// Use this method to get `URLSession.shared` without NetMock applied.
+    /// This method must be called after `NetMockURLProtocol.applyGlobally()`.
+    @objc public class var sharedBypassingNetMock: URLSession {
+        // The implementation to be used post-swizzle.
+        let session = URLSession.sharedBypassingNetMock // Now has .shared's implementation. Pre-swizzle, this will infinitely recurse and stack overflow.
+        if session.configuration.protocolClasses?.contains(where: { $0 == NetMockURLProtocol.self }) == false {
+            session.configuration.protocolClasses = [NetMockURLProtocol.self] + (session.configuration.protocolClasses ?? [])
+        }
+        return session
+    }
 }

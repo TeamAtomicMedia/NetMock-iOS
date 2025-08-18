@@ -5,20 +5,34 @@
 NetMock is a tool to swap in mock responses for API calls, for use in offline app configurations and unit/UI tests.
 NetMock will inject the mock responses, where defined via nm files, and fall back to live API calls where a NetMock file can't be found.
 
-To make use of NetMock, add NetMockURLProtocol to your URLSessionConfiguration when constructing a URLSession:
+Make sure you initialise NetMock before use:
+```swift
+NetMock.shared.initialise()
+// Or, if using in a package:
+NetMock.shared.initialise(bundle: .module)
+```
+
+You may then add NetMock files to your offline app target, or unit test target, and they will be included in the Bundle and detected by NetMock.
+
+---
+
+To apply NetMock to a single URLSession, add NetMockURLProtocol to your URLSessionConfiguration when constructing it:
 ```swift
 let configuration = URLSessionConfiguration.ephemeral
 configuration.protocolClasses = [NetMockURLProtocol.self]
 return URLSession(configuration: configuration)
 ```
 
-And make sure you initialise NetMock:
+To make use of NetMock in system calls and webviews, apply:
 ```swift
-NetMock.shared.initialise()
-NetMock.shared.initialise(bundle: .module) // If using in a package
+URLProtocol.registerClass(NetMockURLProtocol.self)
 ```
 
-You may then add NetMock files to your offline app target, or unit test target, and they will be included in the Bundle and detected by NetMock.
+To apply NetMock throughout the app, including dependencies which don't make their URLSession injectable, NetMock provides a one-line call to inject itself everywhere:
+```swift
+NetMockURLProtocol.applyGlobally()
+```
+
 
 ## NetMock files
 
