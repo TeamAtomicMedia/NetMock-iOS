@@ -27,11 +27,15 @@ public class NetMockURLProtocol: URLProtocol {
     
     override public class func canInit(with task: URLSessionTask) -> Bool {
         if let request = task.currentRequest ?? task.originalRequest {
-            withNetMock { netMock in
-                netMock.hasResponse(for: request)
-            }
+            canInit(with: request)
         } else {
             false
+        }
+    }
+    
+    override public class func canInit(with request: URLRequest) -> Bool {
+        withNetMock { netMock in
+            netMock.hasResponse(for: request)
         }
     }
     
