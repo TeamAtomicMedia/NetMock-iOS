@@ -30,6 +30,12 @@ class NetworkAPI {
         return try JSONDecoder().decode(ExampleGETResponse.self, from: data)
     }
     
+    static let liveHTTPSAPI = URL(string: "https://example.com")!
+    func exampleLiveHTTPSAPI() async throws -> Int {
+        let (_, response) = try await session.data(from: Self.liveHTTPSAPI) // This is expected to provide a failing status code
+        return (response as! HTTPURLResponse).statusCode
+    }
+    
     static let liveAPI = URL(string: "local://api.example.com/live")!
     
     func exampleLiveAPI() async throws -> Int {

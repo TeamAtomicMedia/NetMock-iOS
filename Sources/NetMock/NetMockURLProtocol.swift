@@ -7,10 +7,6 @@
 
 import Foundation
 
-public enum NetMockError: String, Error {
-    case failedToGenerateResponse = "NetMock has loaded a nm response definition successfully, but failed to turn it into a response."
-}
-
 /// Apply this to the URLSessionConfiguration to send URL requests with nm files present through NetMock.
 public class NetMockURLProtocol: URLProtocol {
     static func withNetMock<T: Sendable>(_ perform: @Sendable @escaping (isolated NetMock) -> T) -> T {
@@ -49,7 +45,7 @@ public class NetMockURLProtocol: URLProtocol {
     
     override public func startLoading() {
         guard let response = Self.withNetMock({ [request] in $0.mockResponse(for: request) }) else {
-            client?.urlProtocol(self, didFailWithError: NetMockError.failedToGenerateResponse)
+            client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
             return
         }
         switch response {

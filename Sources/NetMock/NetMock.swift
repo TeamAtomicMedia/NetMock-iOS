@@ -17,6 +17,8 @@ public actor NetMock {
     // Ideally the client could initialise NetMock itself and create URLProtocol with a reference, but URLProtocol can't be initialised directly so we have to use singleton pattern to provide access to NetMock within URLProtocol.
     private init() {}
     
+    private(set) var allowUnmockedRequests = false
+    
     private var urlParser: (String) -> URL? = URL.init(string:)
     /// By default, NetMock will attempt to parse URLs in nm files directly to a URL.
     ///
@@ -30,6 +32,11 @@ public actor NetMock {
         self.urlParser = { [oldValue = self.urlParser] string in
             parser(string) ?? oldValue(string)
         }
+    }
+    
+    /// Blocks requests which do not have a nm file included, returning a .
+    public func allowUnmockedRequests(_ newValue: Bool = true) {
+        allowUnmockedRequests = newValue
     }
     
     /// Loads the nm files in the given bundle.
@@ -124,7 +131,7 @@ public actor NetMock {
         if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
             return definition.responseSequence.first != "#Live" // If we see #Live in a sequence, don't intercept
         } else {
-            return false
+            return !allowUnmockedRequests
         }
     }
     

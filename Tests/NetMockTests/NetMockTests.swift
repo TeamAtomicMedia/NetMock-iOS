@@ -9,6 +9,7 @@ struct Tests {
     
     init() async {
         await NetMock.shared.initialise(bundle: .module)
+        await NetMock.shared.allowUnmockedRequests(false)
     }
     
     @Test func exampleGetIsLoaded() async throws {
@@ -41,7 +42,9 @@ struct Tests {
         #expect(response3.id == 1)
     }
     
-    @Test func liveURLCallsProceedToLiveCall() async throws {
+    @Test func liveURLCallsProceedToLiveCallWhenFallbackEnabled() async throws {
+        await netMock.allowUnmockedRequests(true)
+        
         let statusCode = try await network.exampleLiveAPI()
         #expect(statusCode == 200)
         
@@ -49,9 +52,36 @@ struct Tests {
         try await assertUnsupportedURLError(await network.exampleLiveAPI())
     }
     
-    @Test func unmockedURLCallsProceedToLiveCall() async throws {
+    @Test func liveURLCallsProceedToLiveCallWhenFallbackDisabled() async throws {
+        await netMock.allowUnmockedRequests(false)
+        
+        let statusCode = try await network.exampleLiveAPI()
+        #expect(statusCode == 200)
+        
+        try await assertUnsupportedURLError(await network.exampleLiveAPI())
+        try await assertUnsupportedURLError(await network.exampleLiveAPI())
+    }
+    
+    @Test func unmockedURLCallsProceedToLiveCallWhenFallbackEnabled() async throws {
+        await netMock.allowUnmockedRequests(true)
         try await assertUnsupportedURLError(await network.exampleUnmockedAPI())
         try await assertUnsupportedURLError(await network.exampleUnmockedAPI())
+    }
+    
+    @Test func unmockedURLCallsFailsWhenFallbackDisabled() async throws {
+        await netMock.allowUnmockedRequests(false)
+        try await assertUnmockedAndBlocked(await network.exampleUnmockedAPI())
+        try await assertUnmockedAndBlocked(await network.exampleUnmockedAPI())
+    }
+    
+    @Test func unmockedRealEndpointIsBlocked() async throws {
+        do {
+            let result = try await network.exampleLiveHTTPSAPI()
+            Issue.record("Should not actually make the call, returned status code \(result)")
+        } catch let error as NSError {
+            #expect(error.domain == URLError.errorDomain)
+            #expect(error.code == URLError.resourceUnavailable.rawValue)
+        }
     }
     
     @Test func overridesApplyToUnsequencedAPI() async throws {
@@ -121,6 +151,15 @@ struct Tests {
             let _ = try await response()
             Issue.record("Call succeeded so -1009 (No Internet code) was skipped or not respected")
         } catch let error as URLError where error.code == .notConnectedToInternet {
+            // Continue
+        }
+    }
+    
+    func assertUnmockedAndBlocked(_ response: @autoclosure () async throws -> Any, sourceLocation: SourceLocation = #_sourceLocation) async rethrows {
+        do {
+            let _ = try await response()
+            Issue.record("Call succeeded so resourceUnavailable was skipped or not respected")
+        } catch let error as URLError where error.code == .resourceUnavailable {
             // Continue
         }
     }
