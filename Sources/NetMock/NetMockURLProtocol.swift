@@ -31,7 +31,7 @@ public class NetMockURLProtocol: URLProtocol {
     
     override public class func canInit(with request: URLRequest) -> Bool {
         withNetMock { netMock in
-            netMock.hasResponse(for: request)
+            netMock.shouldHandle(request)
         }
     }
     

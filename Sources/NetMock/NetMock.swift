@@ -17,7 +17,7 @@ public actor NetMock {
     // Ideally the client could initialise NetMock itself and create URLProtocol with a reference, but URLProtocol can't be initialised directly so we have to use singleton pattern to provide access to NetMock within URLProtocol.
     private init() {}
     
-    private(set) var allowUnmockedRequests = false
+    private(set) var handleAllRequests = true
     
     private var urlParser: (String) -> URL? = URL.init(string:)
     /// By default, NetMock will attempt to parse URLs in nm files directly to a URL.
@@ -34,9 +34,9 @@ public actor NetMock {
         }
     }
     
-    /// Blocks requests which do not have a nm file included, returning a .
+    /// Blocks requests which do not have a nm file included, producing a resource unavailable error.
     public func allowUnmockedRequests(_ newValue: Bool = true) {
-        allowUnmockedRequests = newValue
+        handleAllRequests = !newValue
     }
     
     /// Loads the nm files in the given bundle.
@@ -122,16 +122,17 @@ public actor NetMock {
     
     // Used by URLProtocol to decide whether to handle the request.
     // If a nm file hasn't been provided or couldn't be read, this should return false.
-    func hasResponse(for request: URLRequest) -> Bool {
+    func shouldHandle(_ request: URLRequest) -> Bool {
         guard
             let method = request.httpMethod?.uppercased(),
             let url = request.url
         else { return false }
         let netMockRequest = NetMockDefinition.Request(method: method, url: url)
         if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
-            return definition.responseSequence.first != "#Live" // If we see #Live in a sequence, don't intercept
+            let isLive = definition.responseSequence.first == "#Live" // If we see #Live in a sequence, don't intercept
+            return !isLive
         } else {
-            return !allowUnmockedRequests
+            return handleAllRequests
         }
     }
     
@@ -150,14 +151,16 @@ public actor NetMock {
         let netMockRequest = NetMockDefinition.Request(method: method, url: url)
         
         guard let response = definitions[netMockRequest]?.nextResponse() else {
-            netMockRequestLogger.debug(
+            if !handleAllRequests {
+                netMockRequestLogger.debug(
                 """
                 NetMock: No response found for request:
                 > \(url.absoluteString)
-
+                
                 NetMock should be correctly determining if a response is present, so seeing this indicates a bug in NetMock!
                 """
-            )
+                )
+            }
             return nil
         }
         
