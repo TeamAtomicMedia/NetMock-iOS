@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension NetMock.Document.VersionNumber : @unchecked Sendable, Parsable {
+extension NetMock.Document.VersionNumber : Parsable {
     static var parser: Parser<NetMock.Document.VersionNumber> {
         .init { input in
             let preambleParser: Parser<Void> = (.string("NetMock") >> .whitespace()).discard()
@@ -25,7 +25,7 @@ extension NetMock.Document.VersionNumber : @unchecked Sendable, Parsable {
     }
 }
 
-extension NetMock.Document.Header.Identifier : @unchecked Sendable, Parsable {
+extension NetMock.Document.Header.Identifier : Parsable {
     static var parser: Parser<NetMock.Document.Header.Identifier> {
         .init{ input in
             let liveParser: Parser<String> = .string("#Live")
@@ -41,7 +41,7 @@ extension NetMock.Document.Header.Identifier : @unchecked Sendable, Parsable {
     }
 }
 
-extension NetMock.Document.Header : @unchecked Sendable, Parsable {
+extension NetMock.Document.Header : Parsable {
     static var parser: Parser<NetMock.Document.Header> {
         .init { input in
             let methodParser: Parser<NetMock.Document.Header.Method> = .enumeration() << .whitespace()
@@ -57,7 +57,7 @@ extension NetMock.Document.Header : @unchecked Sendable, Parsable {
     }
 }
 
-extension NetMock.Document.Response : @unchecked Sendable, Parsable {
+extension NetMock.Document.Response : Parsable {
     static var parser: Parser<NetMock.Document.Response> {
         .init { input in
             let headerParser: Parser<NetMock.Document.Response.Header> = .init { input in
@@ -78,7 +78,7 @@ extension NetMock.Document.Response : @unchecked Sendable, Parsable {
     
 }
 
-extension NetMock.Document : @unchecked Sendable, Parsable {
+extension NetMock.Document : Parsable {
     static var parser: Parser<NetMock.Document> {
         .init { input in
             let versionParser = NetMock.Document.VersionNumber.parser.optional()
