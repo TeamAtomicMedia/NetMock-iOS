@@ -8,8 +8,8 @@
 import Foundation
 
 extension NetMock {
-    struct Document {
-        struct VersionNumber : Comparable {
+    struct Document : Sendable {
+        struct VersionNumber : Comparable, Sendable {
             let major: Int
             let minor: Int
             let patch: Int?
@@ -23,12 +23,12 @@ extension NetMock {
             }
         }
         
-        struct Header : Equatable  {
-            enum Method: String, CaseIterable {
+        struct Header : Equatable, Sendable  {
+            enum Method : String, CaseIterable, Sendable {
                 case GET, PUT, POST, DELETE, PATCH
             }
             
-            enum Identifier : Equatable {
+            enum Identifier : Equatable, Sendable {
                 case label(String), code(Int), live
             }
 
@@ -38,8 +38,8 @@ extension NetMock {
         }
         
         
-        struct Response {
-            struct Header {
+        struct Response : Sendable {
+            struct Header : Sendable {
                 let code: Int
                 let labels: [String]
             }
