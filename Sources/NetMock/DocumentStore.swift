@@ -39,8 +39,10 @@ extension NetMock {
         }
     }
     
-    public class DocumentStore {
+    public actor DocumentStore {
         public static let shared: DocumentStore = .init()
+        
+        private init() {}
         
         private var documents: [Request: Document] = [:]
         
@@ -69,6 +71,41 @@ extension NetMock {
                     ),
                     body: []
                 )
+            }
+        }
+        
+        public func save(toFile file: URL? = nil) {
+            let documentCount = self.documents.count
+            var writeCount: Int = 0
+            
+            
+            let documentsDirectory = if let file {
+                file
+                } else {
+                    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                }
+            
+            for document in self.documents {
+                let data = document.value.description.data(using: .utf8)
+                let destination: String = URL(string: document.key)?.lastPathComponent ?? document.key
+                
+                let url = documentsDirectory.appendingPathComponent(destination).appendingPathExtension("nm")
+                print("Writing to \(url)")
+                
+                do {
+                    try data?.write(to: url, options: [.atomic, .completeFileProtection])
+                    writeCount += 1
+                } catch {
+                    print("Failed to write document \(document.key): \(error)")
+                }
+            }
+            
+            guard documentCount != 0 else { return }
+            
+            if writeCount == documentCount {
+                print("All files successfully written")
+            } else {
+                print("\(writeCount)/\(documentCount) Documents successfully written")
             }
         }
     }
