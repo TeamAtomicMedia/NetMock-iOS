@@ -51,6 +51,6 @@ extension NetMock {
         
         let version: VersionNumber?
         let header: Header
-        let body: [Response]
+        var body: [Response]
     }
 }

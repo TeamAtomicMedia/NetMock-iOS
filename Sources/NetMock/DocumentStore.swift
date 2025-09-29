@@ -57,7 +57,7 @@ extension NetMock {
             let request = Request(entry.method, entry.urlString)
             let response = entry.toDocumentResponse()
             if let existingDocument = documents[request] {
-                documents[request] = existingDocument.addResponse(response)
+                documents[request]?.body.append(response)
             } else {
                 documents[request] = entry.toDocument()
             }
@@ -72,11 +72,5 @@ extension NetMock {
                 self.urlString = urlString
             }
         }
-    }
-}
-
-extension NetMock.Document {
-    func addResponse(_ response: Response) -> Self {
-        .init(version: self.version, header: self.header, body: self.body + [response])
     }
 }
