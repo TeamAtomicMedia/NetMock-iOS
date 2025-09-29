@@ -35,7 +35,7 @@ extension NetMock.Document.Header : CustomStringConvertible {
 
 extension NetMock.Document.Header.Identifier : CustomStringConvertible {
     var description: String {
-        switch(self) {
+        switch self {
         case .code(let code): "\(code)"
         case .label(let label): label
         case .live: "#Live"
