@@ -24,13 +24,15 @@ extension NetMock {
         }
         
         func toDocument() -> Document {
-            .init(version: nil,
-                  header: .init(
+            return .init(
+                version: nil,
+                header: .init(
                     method: self.method,
                     urlString: self.urlString,
                     sequence: []
-                  ),
-                  body: [self.toDocumentResponse()])
+                ),
+                body: [self.toDocumentResponse()]
+            )
         }
         
         func toDocumentResponse() -> Document.Response {
@@ -49,18 +51,25 @@ extension NetMock {
         @MainActor
         public static var shared: DocumentStore = .init()
         
-        var documents: [String: Document] = [:]
+        private var documents: [Request: Document] = [:]
         
         public mutating func add(_ entry: DocumentStoreEntry) {
-            if let existingDocument = documents[entry.urlString] {
-                let response = entry.toDocumentResponse()
-                documents[entry.urlString] = existingDocument.addResponse(response)
+            let request = Request(entry.method, entry.urlString)
+            let response = entry.toDocumentResponse()
+            if let existingDocument = documents[request] {
+                documents[request] = existingDocument.addResponse(response)
             } else {
-                documents[entry.urlString] = entry.toDocument()
+                documents[request] = entry.toDocument()
             }
+        }
+        
+        struct Request : Hashable {
+            let method: Method
+            let urlString: String
             
-            Task { @MainActor in
-                print(DocumentStore.shared.documents.map(\.value.description))
+            init(_ method: Method, _ urlString: String) {
+                self.method = method
+                self.urlString = urlString
             }
         }
     }
