@@ -22,15 +22,19 @@ extension NetMock {
             self.datetime = Date()
             self.body = body
         }
-        
+                 
         func toDocumentResponse() -> Document.Response {
             let timeFormatter = ISO8601DateFormatter()
+            
+            // Attempt to decode body to JSON and pretty print result
+            let decoded = self.body.flatMap { try? JSONSerialization.jsonObject(with: $0) }.flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.prettyPrinted]) }
+            
             return .init(
                 header: .init(
                     code: self.statusCode,
                     labels: [timeFormatter.string(from: self.datetime)]
                 ),
-                body: self.body
+                body: decoded
             )
         }
     }
@@ -54,7 +58,7 @@ extension NetMock {
                 self.method = method
                 self.urlString = urlString
             }
-            
+
             func toDocument() -> NetMock.Document {
                 .init(
                     version: nil,
