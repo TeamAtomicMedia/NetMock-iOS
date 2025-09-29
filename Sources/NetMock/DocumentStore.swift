@@ -23,18 +23,6 @@ extension NetMock {
             self.body = body
         }
         
-        func toDocument() -> Document {
-            return .init(
-                version: nil,
-                header: .init(
-                    method: self.method,
-                    urlString: self.urlString,
-                    sequence: []
-                ),
-                body: [self.toDocumentResponse()]
-            )
-        }
-        
         func toDocumentResponse() -> Document.Response {
             let timeFormatter = ISO8601DateFormatter()
             return .init(
@@ -47,20 +35,15 @@ extension NetMock {
         }
     }
     
-    public struct DocumentStore {
-        @MainActor
-        public static var shared: DocumentStore = .init()
+    public class DocumentStore {
+        public static let shared: DocumentStore = .init()
         
         private var documents: [Request: Document] = [:]
         
-        public mutating func add(_ entry: DocumentStoreEntry) {
+        public func add(_ entry: DocumentStoreEntry) {
             let request = Request(entry.method, entry.urlString)
             let response = entry.toDocumentResponse()
-            if let existingDocument = documents[request] {
-                documents[request]?.body.append(response)
-            } else {
-                documents[request] = entry.toDocument()
-            }
+            documents[request, default: request.toDocument()].body.append(response)
         }
         
         struct Request : Hashable {
@@ -70,6 +53,18 @@ extension NetMock {
             init(_ method: Method, _ urlString: String) {
                 self.method = method
                 self.urlString = urlString
+            }
+            
+            func toDocument() -> NetMock.Document {
+                .init(
+                    version: nil,
+                    header: .init(
+                        method: method,
+                        urlString: urlString,
+                        sequence: []
+                    ),
+                    body: []
+                )
             }
         }
     }
