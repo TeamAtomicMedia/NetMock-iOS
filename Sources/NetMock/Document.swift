@@ -7,7 +7,12 @@
 
 import Foundation
 
+
 extension NetMock {
+    public enum Method : String, CaseIterable, Sendable {
+        case GET, PUT, POST, DELETE, PATCH
+    }
+
     struct Document : Sendable {
         struct VersionNumber : Comparable, Sendable {
             let major: Int
@@ -24,10 +29,6 @@ extension NetMock {
         }
         
         struct Header : Equatable, Sendable  {
-            enum Method : String, CaseIterable, Sendable {
-                case GET, PUT, POST, DELETE, PATCH
-            }
-            
             enum Identifier : Equatable, Sendable {
                 case label(String), code(Int), live
             }
