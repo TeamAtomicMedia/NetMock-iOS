@@ -62,14 +62,15 @@ extension NetMock.Document.Response : Parsable {
         .init { input in
             let headerParser: Parser<NetMock.Document.Response.Header> = .init { input in
                 let codeParser: Parser<Int> = .number()
-                let labelParser = (Parser<String>.prefix { !$0.isWhitespace }).sequence()
+                let labelParser: Parser<[String]> = .prefix(allowEmpty: true) { $0 != "\n" }.map { $0.components(separatedBy: " ").filter { $0 != ""} }
                 let code = try codeParser.run(&input)
                 let labels = try labelParser.run(&input)
                 return .init(code: code, labels: labels)
-            }.atomic()
-            let bodyParser: Parser<Data?> = (Parser<String>.until(terminator: .string("---"))).map { $0.data(using: .utf8) }
+            }.context(label: "Header")
             
-            let header = try headerParser.run(&input)
+            let bodyParser: Parser<Data?> = (Parser<String>.until(terminator: .whitespace() >> .string("---"))).map { $0.trimmingCharacters(in: .newlines) }.map { if $0.isEmpty { return nil } else { return $0.data(using: .utf8) }}.context(label: "Body")
+            
+            let header: NetMock.Document.Response.Header = try headerParser.run(&input)
             let body: Data? = try bodyParser.run(&input)
             
             return .init(header: header, body: body)

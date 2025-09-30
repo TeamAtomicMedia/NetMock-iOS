@@ -915,13 +915,6 @@ import Testing
 
 @Suite(.serialized)
 struct ParserTests {
-    
-    let validBody = ["200 TEST", "404 NOTFOUND"]
-    
-    func buildTestFile(header: String, body: [String]) {
-        
-    }
-    
     @Suite("Version Parsing")
     struct VersionParsing {
         let validVersion1 = "NetMock 1.2"
@@ -1015,6 +1008,203 @@ struct ParserTests {
             var input: Substring = invalidHeaders[1][...]
             let result = try? parser.run(&input)
             #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
+        }
+    }
+    
+    @Suite("Body Parsing")
+    struct BodyParsing {
+        @Test func testStatusCodeOnly() throws {
+            let input = """
+            200
+            ---
+            """
+            var substring: Substring = input[...]
+            
+            let result: NetMock.Document.Response
+            do {
+                result = try NetMock.Document.Response.parser.run(&substring)
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+                return
+            }
+            
+            #expect(result.header.code == 200)
+            #expect(result.header.labels.isEmpty == true)
+            #expect(result.body == nil, "Expected body to be nil (\(result.body.map{String(data: $0, encoding: .utf8)} ?? "<nil>"))")
+        }
+        
+        @Test func testEmptyResponse() throws {
+            let input = """
+            204 noContent
+            ---
+            """
+            var substring: Substring = input[...]
+            
+            let result: NetMock.Document.Response
+            do {
+                result = try NetMock.Document.Response.parser.run(&substring)
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+                return
+            }
+            
+            #expect(result.header.code == 204)
+            #expect(result.header.labels == ["noContent"])
+            #expect(result.body == nil)
+        }
+        
+        @Test func testStatusCodeAndIdentifiers() throws {
+            let input = """
+            404 notFound specialCase
+            ---
+            """
+            var substring: Substring = input[...]
+            
+            let result: NetMock.Document.Response
+            do {
+                result = try NetMock.Document.Response.parser.run(&substring)
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+                return
+            }
+            
+            #expect(result.header.code == 404)
+            #expect(result.header.labels == ["notFound", "specialCase"])
+            #expect(result.body == nil, "Expected body to be nil (\(result.body.map{String(data: $0, encoding: .utf8)} ?? "<nil>"))")
+        }
+        
+        @Test func testJsonResponse() throws {
+            let input = """
+            200 jsonResponse
+            { "message": "Hello, world!" }
+            ---
+            """
+            var substring: Substring = input[...]
+            
+            let result: NetMock.Document.Response
+            do {
+                result = try NetMock.Document.Response.parser.run(&substring)
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+                return
+            }
+            
+            #expect(result.header.code == 200)
+            #expect(result.header.labels == ["jsonResponse"])
+            #expect(result.body == "{ \"message\": \"Hello, world!\" }".data(using: .utf8),
+                    "Body contained: '\(result.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")'")
+        }
+        
+        @Test func testBinaryResponse() throws {
+            let input = """
+            200 bin
+            \u{00}\u{01}\u{02}\u{FF}
+            ---
+            """
+            var substring: Substring = input[...]
+            
+            let result: NetMock.Document.Response
+            do {
+                result = try NetMock.Document.Response.parser.run(&substring)
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+                return
+            }
+            
+            #expect(result.header.code == 200)
+            #expect(result.header.labels == ["bin"])
+            #expect(result.body == "\u{00}\u{01}\u{02}\u{FF}".data(using: .utf8),
+                    "Body contained: '\(result.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")'")
+        }
+        
+        @Test func testBodyWithTrailingWhitespace() throws {
+            let input = """
+                200 ok
+                { "key": "value" }   
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 200)
+            #expect(result?.header.labels == ["ok"])
+            #expect(result?.body == "{ \"key\": \"value\" }   ".trimmingCharacters(in: .whitespaces).data(using: .utf8))
+        }
+        
+        @Test func testBodyWithMultipleLines() throws {
+            let input = """
+                200 multiline
+                {
+                  "id": 123,
+                  "name": "Test"
+                }
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 200)
+            #expect(result?.header.labels == ["multiline"])
+            let expected = """
+                {
+                  "id": 123,
+                  "name": "Test"
+                }
+                """.data(using: .utf8)
+            #expect(result?.body == expected, "Got: \(result?.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")")
+        }
+        
+        @Test func testBodyWithOnlyWhitespace() throws {
+            let input = """
+                200 emptyBody
+                   
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 200)
+            #expect(result?.header.labels == ["emptyBody"])
+            #expect(result?.body == nil, "Whitespace-only body should be nil")
+        }
+        
+        @Test func testResponseWithoutBodyOrLabels() throws {
+            let input = """
+                500
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 500)
+            #expect(result?.header.labels.isEmpty == true)
+            #expect(result?.body == nil)
+        }
+        
+        @Test func testResponseWithLabelButNoBody() throws {
+            let input = """
+                301 redirect
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 301)
+            #expect(result?.header.labels == ["redirect"])
+            #expect(result?.body == nil)
+        }
+        
+        @Test func testResponseWithTerminatorButNoNewline() throws {
+            let input = """
+                200 simple
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 200)
+            #expect(result?.header.labels == ["simple"])
+            #expect(result?.body == nil)
         }
     }
 }
