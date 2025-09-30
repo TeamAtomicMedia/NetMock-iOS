@@ -85,11 +85,18 @@ extension NetMock {
                     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
                 }
             
+            
             for document in self.documents {
                 let data = document.value.description.data(using: .utf8)
-                let destination: String = URL(string: document.key)?.lastPathComponent ?? document.key
+                let directory = documentsDirectory.appendingPathComponent(document.key.method.rawValue)
+            
+                do {
+                    try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)
+                } catch {
+                    print("Failed to create folder \(directory)")
+                }
                 
-                let url = documentsDirectory.appendingPathComponent(destination).appendingPathExtension("nm")
+                let url = directory.appendingPathComponent(document.key.urlString).appendingPathExtension("nm")
                 print("Writing to \(url)")
                 
                 do {
