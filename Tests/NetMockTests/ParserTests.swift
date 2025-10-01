@@ -925,33 +925,41 @@ struct ParserTests {
         @Test func testValidVersion1() {
             let parser = NetMock.Document.VersionNumber.parser
             do {
-                let result = try parser.run(validVersion1)
+                let result = try parser.complete().run(validVersion1)
                 #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: nil))
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
         @Test func testValidVersion2() {
             let parser = NetMock.Document.VersionNumber.parser
             do {
-                let result = try parser.run(validVersion2)
+                let result = try parser.complete().run(validVersion2)
                 #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: 3))
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
         @Test func testInvalidVersion1() {
             let parser = NetMock.Document.VersionNumber.parser
-            let result = try? parser.run(invalidVersion1)
+            let result = try? parser.complete().run(invalidVersion1)
             #expect(result == nil, "Unexpectedly parsed invalid input: \(invalidVersion1)")
             
         }
         
         @Test func testInvalidVersion2() {
             let parser = NetMock.Document.VersionNumber.parser
-            let result = try? parser.run(invalidVersion2)
+            let result = try? parser.complete().run(invalidVersion2)
             #expect(result == nil, "Unexpectedly parsed invalid input: \(invalidVersion2)")
         }
     }
@@ -962,12 +970,16 @@ struct ParserTests {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "GET https://example.com/test"[...]
             do {
-                let result = try parser.run(&input)
+                let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
                 #expect(result.urlString == "https://example.com/test")
                 #expect(result.sequence.isEmpty == true)
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
@@ -975,12 +987,16 @@ struct ParserTests {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "GET https://example.com/test #Live"[...]
             do {
-                let result = try parser.run(&input)
+                let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
                 #expect(result.urlString == "https://example.com/test")
                 #expect(result.sequence == [.live])
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
@@ -988,12 +1004,16 @@ struct ParserTests {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "GET https://example.com/test 200"[...]
             do {
-                let result = try parser.run(&input)
+                let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
                 #expect(result.urlString == "https://example.com/test")
                 #expect(result.sequence == [.code(200)])
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
@@ -1001,12 +1021,16 @@ struct ParserTests {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "GET https://example.com/test TEST"[...]
             do {
-                let result = try parser.run(&input)
+                let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
                 #expect(result.urlString == "https://example.com/test")
                 #expect(result.sequence == [.label("TEST")])
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
@@ -1014,26 +1038,30 @@ struct ParserTests {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "GET https://example.com/test #Live 200 OK"[...]
             do {
-                let result = try parser.run(&input)
+                let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
                 #expect(result.urlString == "https://example.com/test")
                 #expect(result.sequence == [.live, .code(200), .label("OK")])
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
             }
         }
         
         @Test func testInvalidHeader1() {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "GET"[...]
-            let result = try? parser.run(&input)
+            let result = try? parser.complete().run(&input)
             #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
         }
         
         @Test func testInvalidHeader2() {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "NEW https://shouldBreakOnMethodParse"[...]
-            let result = try? parser.run(&input)
+            let result = try? parser.complete().run(&input)
             #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
         }
     }
@@ -1049,9 +1077,13 @@ struct ParserTests {
             
             let result: NetMock.Document.Response
             do {
-                result = try NetMock.Document.Response.parser.run(&substring)
+                result = try NetMock.Document.Response.parser.complete().run(&substring)
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
                 return
             }
             
@@ -1069,9 +1101,13 @@ struct ParserTests {
             
             let result: NetMock.Document.Response
             do {
-                result = try NetMock.Document.Response.parser.run(&substring)
+                result = try NetMock.Document.Response.parser.complete().run(&substring)
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
                 return
             }
             
@@ -1089,9 +1125,13 @@ struct ParserTests {
             
             let result: NetMock.Document.Response
             do {
-                result = try NetMock.Document.Response.parser.run(&substring)
+                result = try NetMock.Document.Response.parser.complete().run(&substring)
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
                 return
             }
             
@@ -1110,9 +1150,13 @@ struct ParserTests {
             
             let result: NetMock.Document.Response
             do {
-                result = try NetMock.Document.Response.parser.run(&substring)
+                result = try NetMock.Document.Response.parser.complete().run(&substring)
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
                 return
             }
             
@@ -1132,9 +1176,13 @@ struct ParserTests {
             
             let result: NetMock.Document.Response
             do {
-                result = try NetMock.Document.Response.parser.run(&substring)
+                result = try NetMock.Document.Response.parser.complete().run(&substring)
             } catch {
-                #expect(Bool(false), "Parser failed with error: \(error)")
+                #expect(Bool(false), """
+                    Parser failed with error: 
+                    \(error)
+                    """
+                )
                 return
             }
             
@@ -1154,7 +1202,7 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
+            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
             
             #expect(result?.header.code == 200)
             #expect(result?.header.labels == ["multiline"])
@@ -1173,7 +1221,7 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
+            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
             
             #expect(result?.header.code == 500)
             #expect(result?.header.labels.isEmpty == true)
@@ -1186,7 +1234,7 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
+            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
             
             #expect(result?.header.code == 301)
             #expect(result?.header.labels == ["redirect"])
@@ -1199,7 +1247,7 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
+            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
             
             #expect(result?.header.code == 200)
             #expect(result?.header.labels == ["simple"])
@@ -1216,7 +1264,7 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
+            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
             
             #expect(result?.header.code == 200)
             #expect(result?.header.labels == ["success"])
@@ -1247,20 +1295,15 @@ struct ParserTests {
             var substring: Substring = input[...]
             var result: NetMock.Document
             do {
-                result = try NetMock.Document.parser.run(&substring)
+                result = try NetMock.Document.parser.complete().run(&substring)
             } catch {
                 #expect(Bool(false),
-                """
-                Parser failed with error: \(error)
-                Remaining:
-                \(substring)
-                """
+                    """
+                    Parser failed with error: 
+                    \(error)
+                    """
                 )
                 return
-            }
-            
-            if !substring.isEmpty {
-                #expect(Bool(false), "Incomplete parse; remaining: \n\(substring)")
             }
             
             #expect(result.version?.major == 2)
@@ -1313,20 +1356,15 @@ struct ParserTests {
             var substring: Substring = input[...]
             var result: NetMock.Document
             do {
-                result = try NetMock.Document.parser.run(&substring)
+                result = try NetMock.Document.parser.complete().run(&substring)
             } catch {
                 #expect(Bool(false),
-                """
-                Parser failed with error: \(error)
-                Remaining:
-                \(substring)
-                """
+                    """
+                    Parser failed with error: 
+                    \(error)
+                    """
                 )
                 return
-            }
-            
-            if !substring.isEmpty {
-                #expect(Bool(false), "Incomplete parse; remaining: \n\(substring)")
             }
             
             #expect(result.version == nil)
@@ -1364,20 +1402,15 @@ struct ParserTests {
             var substring: Substring = input[...]
             var result: NetMock.Document
             do {
-                result = try NetMock.Document.parser.run(&substring)
+                result = try NetMock.Document.parser.complete().run(&substring)
             } catch {
                 #expect(Bool(false),
-                """
-                Parser failed with error: \(error)
-                Remaining:
-                \(substring)
-                """
+                    """
+                    Parser failed with error:
+                    \(error)
+                    """
                 )
                 return
-            }
-            
-            if !substring.isEmpty {
-                #expect(Bool(false), "Incomplete parse; remaining: \n\(substring)")
             }
             
             #expect(result.version == nil)
