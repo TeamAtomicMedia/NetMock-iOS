@@ -1351,5 +1351,52 @@ struct ParserTests {
                     """.data(using: .utf8)
             )
         }
+        
+        @Test func testMissingTrailingTerminator() async throws {
+            let input = """
+                GET graphql://Notifications 200
+
+                200 2025-10-01T12:51:05Z
+                {
+                  "data": "test"
+                }
+                """
+            var substring: Substring = input[...]
+            var result: NetMock.Document
+            do {
+                result = try NetMock.Document.parser.run(&substring)
+            } catch {
+                #expect(Bool(false),
+                """
+                Parser failed with error: \(error)
+                Remaining:
+                \(substring)
+                """
+                )
+                return
+            }
+            
+            if !substring.isEmpty {
+                #expect(Bool(false), "Incomplete parse; remaining: \n\(substring)")
+            }
+            
+            #expect(result.version == nil)
+            
+            #expect(result.header.method == .GET)
+            #expect(result.header.urlString == "graphql://Notifications")
+            #expect(result.header.sequence == [.code(200)])
+            
+            guard result.body.count == 1
+            else {#expect(Bool(false), "Result body count is not 1, got \(result.body.count)"); return}
+            
+            #expect(result.body[0].header.code == 200)
+            #expect(result.body[0].header.labels == ["2025-10-01T12:51:05Z"])
+            #expect(result.body[0].body == """
+                    {
+                      "data": "test"
+                    }
+                    """.data(using: .utf8)
+            )
+        }
     }
 }

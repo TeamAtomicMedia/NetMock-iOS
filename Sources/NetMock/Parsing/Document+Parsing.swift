@@ -69,10 +69,9 @@ extension NetMock.Document.Response : Parsable {
             }.context("Header")
             
             let bodyParser: Parser<Data?> = Parser<String>
-                .until(terminator: .token("\n---"))
+                .until(terminator: .token("\n---"), allowEOF: true, consumeTerminator: true)
                 .map { $0.trimmingCharacters(in: .newlines) }
                 .map { $0.isEmpty ? nil : $0.data(using: .utf8) }
-                << .token("\n---").discard()
                 .context("Body")
             
             let header: NetMock.Document.Response.Header = try headerParser.run(&input)
@@ -81,7 +80,6 @@ extension NetMock.Document.Response : Parsable {
             return .init(header: header, body: body)
         }
     }
-    
 }
 
 extension NetMock.Document : Parsable {
