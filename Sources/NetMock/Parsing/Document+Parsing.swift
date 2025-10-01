@@ -30,7 +30,7 @@ extension NetMock.Document.Header.Identifier : Parsable {
         .init{ input in
             let liveParser: Parser<String> = .string("#Live")
             let codeParser: Parser<Int> = .number()
-            let labelParser: Parser<String> = .prefix { !$0.isWhitespace }
+            let labelParser: Parser<String> = .predicate { !$0.isWhitespace }
             
             if (try? liveParser.run(&input)) != nil { return .live}
             else if let code = try? codeParser.run(&input) { return .code(code)}
@@ -44,13 +44,13 @@ extension NetMock.Document.Header.Identifier : Parsable {
 extension NetMock.Document.Header : Parsable {
     static var parser: Parser<NetMock.Document.Header> {
         .init { input in
-            let methodParser: Parser<NetMock.Document.Header.Method> = .enumeration() << .whitespace()
-            let urlStringParser: Parser<String> = .prefix { !$0.isWhitespace }
-            let sequenceParser = NetMock.Document.Header.Identifier.parser.sequence(separator: .whitespace())
+            let methodParser: Parser<NetMock.Method> = .enumeration() << .whitespace()
+            let urlStringParser: Parser<String> = .predicate { !$0.isWhitespace } << .whitespace()
+            let sequenceParser = NetMock.Document.Header.Identifier.parser.sequence(separator: .predicate { $0.isWhitespace && !$0.isNewline }, allowTrailingSeparator: true)
             
-            let method = try methodParser.run(&input)
-            let urlString = try urlStringParser.run(&input)
-            let sequence = try sequenceParser.run(&input)
+            let method = try (methodParser).context("Method").run(&input)
+            let urlString = try (urlStringParser).context("urlString").run(&input)
+            let sequence = try (sequenceParser).context("Sequence").run(&input)
             
             return .init(method: method, urlString: urlString, sequence: sequence)
         }
@@ -62,13 +62,13 @@ extension NetMock.Document.Response : Parsable {
         .init { input in
             let headerParser: Parser<NetMock.Document.Response.Header> = .init { input in
                 let codeParser: Parser<Int> = .number()
-                let labelParser: Parser<[String]> = .prefix(allowEmpty: true) { $0 != "\n" }.map { $0.components(separatedBy: " ").filter { $0 != ""} }
+                let labelParser: Parser<[String]> = .predicate(allowEmpty: true) { $0 != "\n" }.map { $0.components(separatedBy: " ").filter { $0 != ""} }
                 let code = try codeParser.run(&input)
                 let labels = try labelParser.run(&input)
                 return .init(code: code, labels: labels)
-            }.context(label: "Header")
+            }.context("Header")
             
-            let bodyParser: Parser<Data?> = (Parser<String>.until(terminator: .whitespace() >> .string("---"))).map { $0.trimmingCharacters(in: .newlines) }.map { if $0.isEmpty { return nil } else { return $0.data(using: .utf8) }}.context(label: "Body")
+            let bodyParser: Parser<Data?> = (Parser<String>.until(terminator: .string("\n---"))).map { $0.trimmingCharacters(in: .newlines) }.map { if $0.isEmpty { return nil } else { return $0.data(using: .utf8) }}.context("Body")
             
             let header: NetMock.Document.Response.Header = try headerParser.run(&input)
             let body: Data? = try bodyParser.run(&input)
@@ -82,7 +82,7 @@ extension NetMock.Document.Response : Parsable {
 extension NetMock.Document : Parsable {
     static var parser: Parser<NetMock.Document> {
         .init { input in
-            let versionParser = NetMock.Document.VersionNumber.parser.optional()
+            let versionParser = NetMock.Document.VersionNumber.parser.optional() << .whitespace()
             let headerParser = NetMock.Document.Header.parser
             let bodyParser = NetMock.Document.Response.parser.sequence(separator: .whitespace())
             

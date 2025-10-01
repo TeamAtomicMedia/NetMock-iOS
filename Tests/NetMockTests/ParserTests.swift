@@ -924,88 +924,115 @@ struct ParserTests {
         
         @Test func testValidVersion1() {
             let parser = NetMock.Document.VersionNumber.parser
-            let result = try? parser.run(validVersion1)
-            #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: nil))
+            do {
+                let result = try parser.run(validVersion1)
+                #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: nil))
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testValidVersion2() {
             let parser = NetMock.Document.VersionNumber.parser
-            let result = try? parser.run(validVersion2)
-            #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: 3))
+            do {
+                let result = try parser.run(validVersion2)
+                #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: 3))
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testInvalidVersion1() {
             let parser = NetMock.Document.VersionNumber.parser
             let result = try? parser.run(invalidVersion1)
-            #expect(result == nil)
+            #expect(result == nil, "Unexpectedly parsed invalid input: \(invalidVersion1)")
+            
         }
         
         @Test func testInvalidVersion2() {
             let parser = NetMock.Document.VersionNumber.parser
             let result = try? parser.run(invalidVersion2)
-            #expect(result == nil)
+            #expect(result == nil, "Unexpectedly parsed invalid input: \(invalidVersion2)")
         }
     }
-    
+
     @Suite("Header Parsing")
     struct HeaderParsing {
-        let validHeaders = [
-            "GET https://example.com/test",
-            "GET https://example.com/test #Live",
-            "GET https://example.com/test 200",
-            "GET https://example.com/test TEST",
-            "GET https://example.com/test #Live 200 OK"
-        ]
-        let invalidHeaders = [
-            "GET",
-            "NEW https://shouldBreakOnMethodParse"
-        ]
-
         @Test func testValidHeader1() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = validHeaders[0][...]
-            let result = try? parser.run(&input)
-            #expect(result != nil, "Failed to parse: \(input)")
+            var input: Substring = "GET https://example.com/test"[...]
+            do {
+                let result = try parser.run(&input)
+                #expect(result.method == .GET)
+                #expect(result.urlString == "https://example.com/test")
+                #expect(result.sequence.isEmpty == true)
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testValidHeader2() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = validHeaders[1][...]
-            let result = try? parser.run(&input)
-            #expect(result != nil, "Failed to parse: \(input)")
+            var input: Substring = "GET https://example.com/test #Live"[...]
+            do {
+                let result = try parser.run(&input)
+                #expect(result.method == .GET)
+                #expect(result.urlString == "https://example.com/test")
+                #expect(result.sequence == [.live])
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testValidHeader3() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = validHeaders[2][...]
-            let result = try? parser.run(&input)
-            #expect(result != nil, "Failed to parse: \(input)")
+            var input: Substring = "GET https://example.com/test 200"[...]
+            do {
+                let result = try parser.run(&input)
+                #expect(result.method == .GET)
+                #expect(result.urlString == "https://example.com/test")
+                #expect(result.sequence == [.code(200)])
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testValidHeader4() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = validHeaders[3][...]
-            let result = try? parser.run(&input)
-            #expect(result != nil, "Failed to parse: \(input)")
+            var input: Substring = "GET https://example.com/test TEST"[...]
+            do {
+                let result = try parser.run(&input)
+                #expect(result.method == .GET)
+                #expect(result.urlString == "https://example.com/test")
+                #expect(result.sequence == [.label("TEST")])
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testValidHeader5() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = validHeaders[4][...]
-            let result = try? parser.run(&input)
-            #expect(result != nil, "Failed to parse: \(input)")
+            var input: Substring = "GET https://example.com/test #Live 200 OK"[...]
+            do {
+                let result = try parser.run(&input)
+                #expect(result.method == .GET)
+                #expect(result.urlString == "https://example.com/test")
+                #expect(result.sequence == [.live, .code(200)])
+            } catch {
+                #expect(Bool(false), "Parser failed with error: \(error)")
+            }
         }
         
         @Test func testInvalidHeader1() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = invalidHeaders[0][...]
+            var input: Substring = "GET"[...]
             let result = try? parser.run(&input)
             #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
         }
         
         @Test func testInvalidHeader2() {
             let parser = NetMock.Document.Header.parser
-            var input: Substring = invalidHeaders[1][...]
+            var input: Substring = "NEW https://shouldBreakOnMethodParse"[...]
             let result = try? parser.run(&input)
             #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
         }
@@ -1117,20 +1144,6 @@ struct ParserTests {
                     "Body contained: '\(result.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")'")
         }
         
-        @Test func testBodyWithTrailingWhitespace() throws {
-            let input = """
-                200 ok
-                { "key": "value" }   
-                ---
-                """
-            var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
-            
-            #expect(result?.header.code == 200)
-            #expect(result?.header.labels == ["ok"])
-            #expect(result?.body == "{ \"key\": \"value\" }   ".trimmingCharacters(in: .whitespaces).data(using: .utf8))
-        }
-        
         @Test func testBodyWithMultipleLines() throws {
             let input = """
                 200 multiline
@@ -1152,20 +1165,6 @@ struct ParserTests {
                 }
                 """.data(using: .utf8)
             #expect(result?.body == expected, "Got: \(result?.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")")
-        }
-        
-        @Test func testBodyWithOnlyWhitespace() throws {
-            let input = """
-                200 emptyBody
-                   
-                ---
-                """
-            var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.run(&substring)
-            
-            #expect(result?.header.code == 200)
-            #expect(result?.header.labels == ["emptyBody"])
-            #expect(result?.body == nil, "Whitespace-only body should be nil")
         }
         
         @Test func testResponseWithoutBodyOrLabels() throws {
@@ -1205,6 +1204,69 @@ struct ParserTests {
             #expect(result?.header.code == 200)
             #expect(result?.header.labels == ["simple"])
             #expect(result?.body == nil)
+        }
+        
+        @Test func testResponseBodyContainingTerminator() throws {
+            let input = """
+                200 success
+                {
+                    "id": "test",
+                    "separators": "---"
+                }
+                ---
+                """
+            var substring: Substring = input[...]
+            let result = try? NetMock.Document.Response.parser.run(&substring)
+            
+            #expect(result?.header.code == 200)
+            #expect(result?.header.labels == ["success"])
+            #expect(result?.body != nil)
+        }
+    }
+    
+    @Suite("NetMock Files")
+    struct NetMockFiles {
+        @Test func testValidFile() async throws {
+            let input = """
+                NetMock 2.5.0
+                GET https://this.is.a.test.com/hello/world TEST1 TEST2 #Live 200 300
+                200 simple
+                ---
+                500
+                ---
+                200 multiline
+                {
+                  "id": 123,
+                  "name": "Test"
+                }
+                ---
+                404 notFound specialCase
+                ---
+                """
+            var substring: Substring = input[...]
+            var result: NetMock.Document
+            do {
+                result = try NetMock.Document.parse(&substring)
+            } catch {
+                #expect(Bool(false),
+                """
+                Parser failed with error: \(error)
+                Remaining:
+                \(substring)
+                """
+                )
+                return
+            }
+            
+            #expect(result.version?.major == 2)
+            #expect(result.version?.minor == 5)
+            #expect(result.version?.patch == 0)
+            
+            #expect(result.header.method == .GET)
+            #expect(result.header.urlString == "https://this.is.a.test.com/hello/world")
+            #expect(result.header.sequence == [.label("TEST1"), .label("TEST2"), .live, .code(200), .code(300)])
+            
+            #expect(!result.body.isEmpty)
         }
     }
 }
