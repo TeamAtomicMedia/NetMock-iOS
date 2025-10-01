@@ -1017,7 +1017,7 @@ struct ParserTests {
                 let result = try parser.run(&input)
                 #expect(result.method == .GET)
                 #expect(result.urlString == "https://example.com/test")
-                #expect(result.sequence == [.live, .code(200)])
+                #expect(result.sequence == [.live, .code(200), .label("OK")])
             } catch {
                 #expect(Bool(false), "Parser failed with error: \(error)")
             }
@@ -1230,6 +1230,7 @@ struct ParserTests {
             let input = """
                 NetMock 2.5.0
                 GET https://this.is.a.test.com/hello/world TEST1 TEST2 #Live 200 300
+                
                 200 simple
                 ---
                 500
@@ -1246,7 +1247,7 @@ struct ParserTests {
             var substring: Substring = input[...]
             var result: NetMock.Document
             do {
-                result = try NetMock.Document.parse(&substring)
+                result = try NetMock.Document.parser.run(&substring)
             } catch {
                 #expect(Bool(false),
                 """
@@ -1258,6 +1259,10 @@ struct ParserTests {
                 return
             }
             
+            if !substring.isEmpty {
+                #expect(Bool(false), "Incomplete parse; remaining: \n\(substring)")
+            }
+            
             #expect(result.version?.major == 2)
             #expect(result.version?.minor == 5)
             #expect(result.version?.patch == 0)
@@ -1266,7 +1271,85 @@ struct ParserTests {
             #expect(result.header.urlString == "https://this.is.a.test.com/hello/world")
             #expect(result.header.sequence == [.label("TEST1"), .label("TEST2"), .live, .code(200), .code(300)])
             
-            #expect(!result.body.isEmpty)
+            guard result.body.count == 4
+            else {#expect(Bool(false), "Result body count is not 4, got \(result.body.count)"); return}
+            
+            #expect(result.body[0].header.code == 200)
+            #expect(result.body[0].header.labels == ["simple"])
+            #expect(result.body[0].body == nil)
+            
+            #expect(result.body[1].header.code == 500)
+            #expect(result.body[1].header.labels == [])
+            #expect(result.body[1].body == nil)
+            
+            #expect(result.body[2].header.code == 200)
+            #expect(result.body[2].header.labels == ["multiline"])
+            #expect(result.body[2].body == """
+                {
+                  "id": 123,
+                  "name": "Test"
+                }
+                """.data(using: .utf8)
+                )
+            #expect(result.body[3].header.code == 404)
+            #expect(result.body[3].header.labels == ["notFound", "specialCase"])
+            #expect(result.body[3].body == nil)
+        }
+        
+        @Test func testRealWorldFile() async throws {
+            let input = """
+                GET graphql://Notifications 200
+
+                200 2025-10-01T12:51:05Z
+                {
+                  "data" : {
+                    "notificationsForUser" : [
+
+                    ]
+                  }
+                }
+                ---
+                """
+            var substring: Substring = input[...]
+            var result: NetMock.Document
+            do {
+                result = try NetMock.Document.parser.run(&substring)
+            } catch {
+                #expect(Bool(false),
+                """
+                Parser failed with error: \(error)
+                Remaining:
+                \(substring)
+                """
+                )
+                return
+            }
+            
+            if !substring.isEmpty {
+                #expect(Bool(false), "Incomplete parse; remaining: \n\(substring)")
+            }
+            
+            #expect(result.version == nil)
+            
+            #expect(result.header.method == .GET)
+            #expect(result.header.urlString == "graphql://Notifications")
+            #expect(result.header.sequence == [.code(200)])
+            
+            guard result.body.count == 1
+            else {#expect(Bool(false), "Result body count is not 1, got \(result.body.count)"); return}
+            
+            #expect(result.body[0].header.code == 200)
+            #expect(result.body[0].header.labels == ["2025-10-01T12:51:05Z"])
+            #expect(result.body[0].body == """
+                    {
+                      "data" : {
+                        "notificationsForUser" : [
+
+                        ]
+                      }
+                    }
+                    """.data(using: .utf8)
+            )
         }
     }
 }

@@ -10,7 +10,7 @@ import Foundation
 extension NetMock.Document.VersionNumber : Parsable {
     static var parser: Parser<NetMock.Document.VersionNumber> {
         .init { input in
-            let preambleParser: Parser<Void> = (.string("NetMock") >> .whitespace()).discard()
+            let preambleParser: Parser<Void> = (.token("NetMock") >> .whitespace()).discard()
             
             let majorParser: Parser<Int> = .number()
             let auxiliaryNumber: Parser<Int> = .character(".") >> .number()
@@ -28,7 +28,7 @@ extension NetMock.Document.VersionNumber : Parsable {
 extension NetMock.Document.Header.Identifier : Parsable {
     static var parser: Parser<NetMock.Document.Header.Identifier> {
         .init{ input in
-            let liveParser: Parser<String> = .string("#Live")
+            let liveParser: Parser<String> = .token("#Live")
             let codeParser: Parser<Int> = .number()
             let labelParser: Parser<String> = .predicate { !$0.isWhitespace }
             
@@ -45,7 +45,7 @@ extension NetMock.Document.Header : Parsable {
     static var parser: Parser<NetMock.Document.Header> {
         .init { input in
             let methodParser: Parser<NetMock.Method> = .enumeration() << .whitespace()
-            let urlStringParser: Parser<String> = .predicate { !$0.isWhitespace } << .whitespace()
+            let urlStringParser: Parser<String> = .predicate { !$0.isWhitespace } << .whitespace().optional()
             let sequenceParser = NetMock.Document.Header.Identifier.parser.sequence(separator: .predicate { $0.isWhitespace && !$0.isNewline }, allowTrailingSeparator: true)
             
             let method = try (methodParser).context("Method").run(&input)
@@ -68,7 +68,12 @@ extension NetMock.Document.Response : Parsable {
                 return .init(code: code, labels: labels)
             }.context("Header")
             
-            let bodyParser: Parser<Data?> = (Parser<String>.until(terminator: .string("\n---"))).map { $0.trimmingCharacters(in: .newlines) }.map { if $0.isEmpty { return nil } else { return $0.data(using: .utf8) }}.context("Body")
+            let bodyParser: Parser<Data?> = Parser<String>
+                .until(terminator: .token("\n---"))
+                .map { $0.trimmingCharacters(in: .newlines) }
+                .map { $0.isEmpty ? nil : $0.data(using: .utf8) }
+                << .token("\n---").discard()
+                .context("Body")
             
             let header: NetMock.Document.Response.Header = try headerParser.run(&input)
             let body: Data? = try bodyParser.run(&input)
@@ -82,8 +87,8 @@ extension NetMock.Document.Response : Parsable {
 extension NetMock.Document : Parsable {
     static var parser: Parser<NetMock.Document> {
         .init { input in
-            let versionParser = NetMock.Document.VersionNumber.parser.optional() << .whitespace()
-            let headerParser = NetMock.Document.Header.parser
+            let versionParser = NetMock.Document.VersionNumber.parser.optional() << .whitespace().optional()
+            let headerParser = NetMock.Document.Header.parser << .whitespace().optional()
             let bodyParser = NetMock.Document.Response.parser.sequence(separator: .whitespace())
             
             let version = try versionParser.run(&input)
