@@ -88,15 +88,25 @@ extension NetMock {
             
             for document in self.documents {
                 let data = document.value.description.data(using: .utf8)
-                let directory = documentsDirectory.appendingPathComponent(document.key.method.rawValue)
             
+                var directory: URL = documentsDirectory
+                var filename: String = "\(document.key.method.rawValue):\(document.key.urlString.replacingOccurrences(of: "/", with: ":"))"
+                
+                if let path = URL(string: document.key.urlString)?.pathComponents {
+                    directory = path.dropLast().reduce(directory) { $0.appendingPathComponent($1) }
+                    
+                    if let last = path.last {
+                        filename = "\(document.key.method.rawValue):\(last)"
+                    }
+                }
+                
                 do {
                     try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)
                 } catch {
                     print("Failed to create folder \(directory)")
                 }
                 
-                let url = directory.appendingPathComponent(document.key.urlString).appendingPathExtension("nm")
+                let url = directory.appendingPathComponent(filename).appendingPathExtension("nm")
                 print("Writing to \(url)")
                 
                 do {
