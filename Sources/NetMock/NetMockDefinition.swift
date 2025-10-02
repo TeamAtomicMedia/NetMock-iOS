@@ -88,7 +88,10 @@ struct NetMockDefinition {
         if !lines.isEmpty {
             let responseDefinition = lines.joined(separator: "\n")
             
-            let responses = responseDefinition.components(separatedBy: "\n---\n")
+            let responses = responseDefinition
+                .components(separatedBy: "\n---\n")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
             self.availableResponses = Dictionary(minimumCapacity: responses.count)
             for response in responses {
                 // Allow whitespace before & after each response
