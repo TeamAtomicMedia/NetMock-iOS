@@ -22,7 +22,7 @@ extension NetMock {
             self.datetime = Date()
             self.body = body
         }
-                 
+        
         func toDocumentResponse() -> Document.Response {
             let timeFormatter = ISO8601DateFormatter()
             
@@ -60,7 +60,7 @@ extension NetMock {
                 self.method = method
                 self.urlString = urlString
             }
-
+            
             func toDocument() -> NetMock.Document {
                 .init(
                     version: nil,
@@ -85,9 +85,9 @@ extension NetMock {
             
             let documentsDirectory = if let file {
                 file
-                } else {
-                    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                }
+            } else {
+                FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            }
             
             for document in self.documents {
                 let fileContents = modifyContents(document.value.description)
