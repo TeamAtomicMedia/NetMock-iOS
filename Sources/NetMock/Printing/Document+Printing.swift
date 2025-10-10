@@ -5,8 +5,6 @@
 //  Created by Christopher Wainwright on 26/09/2025.
 //
 
-import Playgrounds
-
 extension NetMock.Document: CustomStringConvertible {
     var description: String {
         """
@@ -56,26 +54,4 @@ extension NetMock.Document.Response.Header : CustomStringConvertible {
     var description: String {
         "\(self.code) \(self.labels.joined(separator: " "))"
     }
-}
-
-#Playground {
-    let testDocument = NetMock.Document(
-        version: .init(major: 2, minor: 0, patch: 20),
-        header: .init(
-            method: .GET,
-            urlString: "https://api.example.com/data",
-            sequence: [.code(200), .code(404), .label("TEST"), .label("FAILURE"), .live]),
-        body: [
-            .init(
-                header: .init(code: 200, labels: ["TEST"]),
-                body: "{\"id\": \"Hello\"}".data(using: .utf8)
-            ),
-            .init(
-                header: .init(code: 404, labels: []),
-                body: nil
-            )
-        ]
-    )
-    
-    print(testDocument)
 }
