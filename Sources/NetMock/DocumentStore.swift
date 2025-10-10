@@ -74,10 +74,14 @@ extension NetMock {
             }
         }
         
-        public func save(toFile file: URL? = nil) {
+        public func save(
+            toFile file: URL? = nil,
+            modifyContents: @escaping (String) -> String = {$0},
+            customFilename: @escaping (Method, String) -> String = {$1.split(separator: "/").last.map(String.init) ?? $1},
+            customDirectory: @escaping (Method, String) -> [String] = {method, urlString in urlString.split(separator: "/").dropLast().map(String.init) + [method.rawValue] }
+        ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0
-            
             
             let documentsDirectory = if let file {
                 file
@@ -85,20 +89,14 @@ extension NetMock {
                     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
                 }
             
-            
             for document in self.documents {
-                let data = document.value.description.data(using: .utf8)
-            
-                var directory: URL = documentsDirectory
-                var filename: String = "\(document.key.method.rawValue):\(document.key.urlString.replacingOccurrences(of: "/", with: ":"))"
+                let fileContents = modifyContents(document.value.description)
+                let data = fileContents.data(using: .utf8)
                 
-                if let path = URL(string: document.key.urlString)?.pathComponents {
-                    directory = path.dropLast().reduce(directory) { $0.appendingPathComponent($1) }
-                    
-                    if let last = path.last {
-                        filename = "\(document.key.method.rawValue):\(last)"
-                    }
-                }
+                let directory: URL = customDirectory(document.key.method, document.key.urlString)
+                    .reduce(documentsDirectory) { $0.appendingPathComponent($1) }
+                
+                let filename: String = customFilename(document.key.method, document.key.urlString)
                 
                 do {
                     try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)
