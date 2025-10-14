@@ -1,5 +1,5 @@
 //
-//  ParseError.swift
+//  Definition.swift
 //  NetMock
 //
 //  Created by Christopher Wainwright on 24/09/2025.

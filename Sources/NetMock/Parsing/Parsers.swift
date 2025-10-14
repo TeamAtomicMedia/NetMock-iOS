@@ -106,15 +106,16 @@ extension Parser {
             .reduce(baseCase) { $0 <|> $1 }
     }
     
-    static func whitespace() -> Parser<Void> {
+    static func whitespace() -> Parser<String> {
         .init { input in
             let whitespace = input.prefix(while: \.isWhitespace)
             if whitespace.isEmpty { throw ParseError.expectedWhitespace }
             input.removeFirst(whitespace.count)
+            return String(whitespace)
         }
     }
     
-    static func optionalWhitespace() -> Parser<Void> {
-        .whitespace().optional().discard()
+    static func optionalWhitespace() -> Parser<String?> {
+        .whitespace().optional()
     }
 }

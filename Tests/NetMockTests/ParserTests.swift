@@ -269,12 +269,12 @@ struct CommonParsers {
     
     @Suite
     struct WhitespaceParser {
-        var parser: Parser<Void> { .whitespace() }
+        var parser: Parser<String> { .whitespace() }
         
         @Test
         func testConsumesSpaces() {
             var input: Substring = "   abc"
-            try? parser.run(&input)
+            _ = try? parser.run(&input)
             #expect(input == "abc")
         }
         
@@ -290,19 +290,19 @@ struct CommonParsers {
      
     @Suite
     struct OptionalWhitespaceParser {
-        var parser: Parser<Void> { .optionalWhitespace() }
+        var parser: Parser<String?> { .optionalWhitespace() }
         
         @Test
         func testConsumesSpaces() {
             var input: Substring = "   abc"
-            try? parser.run(&input)
+            _ = try? parser.run(&input)
             #expect(input == "abc")
         }
         
         @Test
         func testDoesNotThrowWhenNoSpaces() {
             var input: Substring = "abc"
-            try? parser.run(&input)
+            _ = try? parser.run(&input)
             #expect(input == "abc")
         }
     }
