@@ -36,6 +36,12 @@ extension NetMock {
             let method: Method
             let urlString: String
             let sequence: [Identifier]
+            
+            init(method: Method, urlString: String, sequence: [Identifier]) {
+                self.method = method
+                self.urlString = urlString
+                self.sequence = sequence
+            }
         }
         
         
