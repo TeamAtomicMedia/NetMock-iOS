@@ -42,18 +42,3 @@ struct Parser<T: Sendable> : Sendable {
     /// Define a parser
     init(_ run: @escaping Parse<T>) { self._run = run }
 }
-
-extension Parser {
-    func test(tests: [String]) {
-        for test in tests {
-            var testSubStr = test[...]
-            do {
-                let result = try self.run(&testSubStr)
-                print("\(test) -> \(result)")
-            } catch {
-                print("\(test) -> \(error)")
-            }
-            print("Remaining: '\(testSubStr)'")
-        }
-    }
-}
