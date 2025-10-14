@@ -10,10 +10,10 @@ import Foundation
 extension NetMock.Document.VersionNumber : Parsable {
     static var parser: Parser<NetMock.Document.VersionNumber> {
         .init { input in
-            let preambleParser: Parser<Void> = (.token("NetMock") >> .whitespace()).discard()
+            let preambleParser: Parser<Void> = (.token("NetMock") *> .whitespace()).discard()
             
             let majorParser: Parser<Int> = .number()
-            let auxiliaryNumber: Parser<Int> = .character(".") >> .number()
+            let auxiliaryNumber: Parser<Int> = .character(".") *> .number()
             
             _ = try preambleParser.run(&input)
             let major: Int = try majorParser.run(&input)
@@ -44,8 +44,8 @@ extension NetMock.Document.Header.Identifier : Parsable {
 extension NetMock.Document.Header : Parsable {
     static var parser: Parser<NetMock.Document.Header> {
         .init { input in
-            let methodParser: Parser<NetMock.Method> = .enumeration() << .whitespace()
-            let urlStringParser: Parser<String> = .predicate { !$0.isWhitespace } << .whitespace().optional()
+            let methodParser: Parser<NetMock.Method> = .enumeration() <* .whitespace()
+            let urlStringParser: Parser<String> = .predicate { !$0.isWhitespace } <* .whitespace().optional()
             let sequenceParser = NetMock.Document.Header.Identifier.parser.sequence(separator: .predicate { $0.isWhitespace && !$0.isNewline }, allowTrailingSeparator: true)
             
             let method = try (methodParser).context("Method").run(&input)
@@ -85,8 +85,8 @@ extension NetMock.Document.Response : Parsable {
 extension NetMock.Document : Parsable {
     static var parser: Parser<NetMock.Document> {
         .init { input in
-            let versionParser = NetMock.Document.VersionNumber.parser.optional() << .whitespace().optional()
-            let headerParser = NetMock.Document.Header.parser << .whitespace().optional()
+            let versionParser = NetMock.Document.VersionNumber.parser.optional() <* .whitespace().optional()
+            let headerParser = NetMock.Document.Header.parser <* .whitespace().optional()
             let bodyParser = NetMock.Document.Response.parser.sequence(separator: .whitespace())
             
             let version = try versionParser.run(&input)
