@@ -33,8 +33,15 @@ func <|><A>(
     rhs: Parser<A>
 ) -> Parser<A> {
     Parser { input in
-        if let a = try? lhs.run(&input) { return a }
-        return try rhs.run(&input)
+        do {
+            return try lhs.run(&input)
+        } catch let firstError {
+            do {
+                return try rhs.run(&input)
+            } catch {
+                throw firstError
+            }
+        }
     }.atomic()
 }
 

@@ -28,7 +28,7 @@ enum ParseError: Error, CustomStringConvertible {
         }
     }
     
-    enum ExpectedToken : Sendable, CustomStringConvertible {
+    enum ExpectedToken : Sendable, CustomStringConvertible, Equatable {
         case one(String)
         case oneOf([String])
         case sequence([String])
@@ -52,4 +52,22 @@ enum ParseError: Error, CustomStringConvertible {
     case expectedCharactersSatisfyingPredicate
     case incompleteParse(Substring)
     indirect case contextualError(String, ParseError)
+}
+
+extension ParseError: Equatable {
+    static func == (lhs: ParseError, rhs: ParseError) -> Bool {
+        switch (lhs, rhs) {
+        case (.expectedWhitespace, .expectedWhitespace) : true
+        case (.expectedTerminationSequence, .expectedTerminationSequence) : true
+        case (.expectedNumber, .expectedNumber) : true
+        case (.expectedAlphaNumericString, .expectedAlphaNumericString) : true
+        case (.expectedCharactersSatisfyingPredicate, .expectedCharactersSatisfyingPredicate) : true
+        case (.expectedCharacter(let a), .expectedCharacter(let b)) : a == b
+        case (.expectedToken(let a), .expectedToken(let b)) : a == b
+        case (.expectedType(let a), .expectedType(let b)) : a == b
+        case (.incompleteParse(let a), .incompleteParse(let b)) : a == b
+        case (.contextualError(let contextA, let errorA), .contextualError(let contextB, let errorB)) : contextA == contextB && errorA == errorB
+        default: false
+        }
+    }
 }
