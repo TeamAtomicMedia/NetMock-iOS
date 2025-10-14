@@ -103,7 +103,7 @@ extension Parser {
         let baseCase: Parser<T> = .error(.expectedToken(.oneOf(T.allCases.map(\.rawValue))))
         return T.allCases
             .map { rawRepr($0) }
-            .reduce(baseCase) { $0 <|> $1 }
+            .reduce(baseCase) { ($0 <|> $1).firstError() }
     }
     
     static func whitespace() -> Parser<String> {

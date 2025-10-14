@@ -143,4 +143,34 @@ extension Parser {
             }
         }
     }
+    
+    /// Extract first error (if available)
+    /// Extract first error from an either error
+    func firstError() -> Parser<T> {
+        .init { input in
+            do {
+                return try self.run(&input)
+            } catch let parseError as ParseError {
+                switch parseError {
+                case .eitherError(let firstError, _) : throw firstError
+                default: throw parseError
+                }
+            }
+        }
+    }
+    
+    /// Extract second error (if available)
+    /// Extract second error from an either error
+    func secondError() -> Parser<T> {
+        .init { input in
+            do {
+                return try self.run(&input)
+            } catch let parseError as ParseError {
+                switch parseError {
+                case .eitherError(_, let secondError) : throw secondError
+                default: throw parseError
+                }
+            }
+        }
+    }
 }

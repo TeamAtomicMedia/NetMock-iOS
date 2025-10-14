@@ -35,11 +35,11 @@ func <|><A>(
     Parser { input in
         do {
             return try lhs.run(&input)
-        } catch let firstError {
+        } catch let firstError as ParseError {
             do {
                 return try rhs.run(&input)
-            } catch {
-                throw firstError
+            } catch let secondError as ParseError {
+                throw ParseError.eitherError(firstError, secondError)
             }
         }
     }.atomic()
@@ -59,6 +59,12 @@ func >>=<A, B>(
         let bParser = rhs(a)
         return try bParser.run(&input)
     }.atomic()
+}
+
+extension Parser {
+    func bind<B>(to parserBuilder: @Sendable @escaping (T) -> Parser<B>) -> Parser<B> {
+        self >>= parserBuilder
+    }
 }
 
 /// Bind left (discarding)

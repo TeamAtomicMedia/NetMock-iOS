@@ -25,6 +25,7 @@ enum ParseError: Error, CustomStringConvertible {
         case .expectedCharactersSatisfyingPredicate: return "Expected Characters Satisfying Predicate"
         case .incompleteParse(let remaining): return "Incomplete Parse - Remaining: \n\(remaining)"
         case .contextualError(let context, let error): return "- Parsing Error in \(context):\n\(error.description.indent(2))"
+        case .eitherError(let firstError, let secondError): return "Parsing Failed in Either:\n\("1. \(firstError.description)\n2. \(secondError.description)".indent(2))"
         }
     }
     
@@ -52,6 +53,7 @@ enum ParseError: Error, CustomStringConvertible {
     case expectedCharactersSatisfyingPredicate
     case incompleteParse(Substring)
     indirect case contextualError(String, ParseError)
+    indirect case eitherError(ParseError, ParseError)
 }
 
 extension ParseError: Equatable {
@@ -67,6 +69,8 @@ extension ParseError: Equatable {
         case (.expectedType(let a), .expectedType(let b)) : a == b
         case (.incompleteParse(let a), .incompleteParse(let b)) : a == b
         case (.contextualError(let contextA, let errorA), .contextualError(let contextB, let errorB)) : contextA == contextB && errorA == errorB
+        case (.eitherError(let errorA1, let errorA2), .eitherError(let errorB1, let errorB2)):
+            errorA1 == errorB1 && errorA2 == errorB2
         default: false
         }
     }
