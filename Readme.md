@@ -271,7 +271,7 @@ The `NetMock.DocumentStore` actor and its related methods enable the automatic c
 Capture live network responses by adding an interceptor layer to your networking stack.
 
 To capture network responses, add an interceptor layer to your networking stack. 
-As this implementation is dependent on the users networking stack, it is up to the caller to implement their own interceptor for their networking pipeline.
+As this implementation is dependent on the user's networking stack, it is up to the caller to implement their own interceptor for their networking pipeline.
 
 For example, to capture ApolloGraphQL responses, an `ApolloInterceptor` class can be built to pass network responses to the `DocumentStore` via `DocumentStore.add`. 
 
