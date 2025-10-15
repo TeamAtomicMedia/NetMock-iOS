@@ -261,3 +261,81 @@ private extension URLSessionConfiguration {
 }
 #endif
 ```
+
+## NetMock Capture and File Generation
+
+The `NetMock.DocumentStore` actor and its related methods enable the automatic capturing and saving of network responses in the form of NetMock documents. This can be particularly useful when preparing testing environments where a lot of real-world data may be required, such as UI testing.
+
+### Response Capturing
+
+Capture live network responses by adding an interceptor layer to your networking stack.
+
+To capture network responses, add an interceptor layer to your networking stack. 
+As this implementation is dependent on the users networking stack, it is up to the caller to implement their own interceptor for their networking pipeline.
+
+For example, to capture ApolloGraphQL responses, an `ApolloInterceptor` class can be built to pass network responses to the `DocumentStore` via `DocumentStore.add`. 
+
+```swift
+class ApolloNetMockInterceptor: ApolloInterceptor {
+    let id: String = UUID().uuidString
+    
+    let active: Bool
+    
+    init(isActive: Bool) {
+        self.active = isActive
+    }
+    
+    func interceptAsync<Operation>(
+        chain: any Apollo.RequestChain,
+        request: Apollo.HTTPRequest<Operation>,
+        response: Apollo.HTTPResponse<Operation>?,
+        completion: @escaping (Result<Apollo.GraphQLResult<Operation.Data>, any Error>) -> Void
+    ) where Operation : ApolloAPI.GraphQLOperation {
+        /// Always pass the request and response through to the next interceptor layer 
+        /// to maintain normal network behaviour and avoid interrupting the network stack.
+        defer { chain.proceedAsync(request: request, response: response, interceptor: self, completion: completion) }
+        
+        guard active else { return }
+        
+        let method: NetMock.Method = .init(operationType: Operation.operationType)
+        let urlString = "\(request.graphQLEndpoint.host ?? "no.host")/\(Operation.operationName)"
+        let statusCode: Int = response?.httpResponse.statusCode ?? 408 // Assume timeout if response not provided
+        let body: Data? = response?.rawData
+        
+        /// Build DocumentStoreEntry instance from response information
+        /// Method and urlString should uniquely identify the response type
+        let storeEntry: NetMock.DocumentStoreEntry = .init(method: method, urlString: urlString, statusCode: statusCode, body: body)
+        
+        /// Add NetMock response to DocumentStore
+        Task {
+            await NetMock.DocumentStore.shared.add(storeEntry)
+        }
+    }
+}
+```
+
+Multiple responses to the same request will be combined into a single file, labelled by the timestamp of capture time.
+
+### File Generation
+
+Use `DocumentStore.save` method to persist captured responses to the disk. By default, the method will save to the app's document directory. 
+
+The save function also features parameters for customising file locations and contents which can be used to generalise domains and organise the resulting files:
+- `toFile`: The base directory where files will be written. Defaults to the app’s document directory.
+- `modifyContents`: A closure for transforming the saved file contents (e.g. redacting or generalising domains).
+- `customFilename`: A closure for customising the file’s name.
+- `customDirectory`: A closure for customising the directory structure for each response.
+
+```swift
+Button("Save Responses") {
+    Task {
+        await NetMock.DocumentStore.shared.save { fileContents in
+            fileContents.replacingOccurrences(
+                of: "gateway.uat.testservice.net", with: "graphql:/"
+            )
+        }
+    }
+}
+```
+
+In this example, the `modifyContents` closure replace occurrences of the UAT domain with a more generalised URL, allowing the persisted files to remain environment-agnostic.
