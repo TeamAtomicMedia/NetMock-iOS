@@ -56,7 +56,7 @@ GET https://api.example.com/example
 
 ### Providing alternative status codes
 
-You may provide alternative responses for different status codes:
+You may provide alternative responses for different status codes with a divider of "\n---" between them:
 
 `ExampleGETAPI.nm`
 ```
@@ -78,6 +78,8 @@ GET https://api.example.com/example
 ```
 
 The first response in the list will be used by default.
+
+Optionally, you may provide a trailing "\n---" on the final response in a file.
 
 ### Response sequences
 
