@@ -7,78 +7,87 @@
 
 import Foundation
 
+extension NetMock.Document {
+    init(request: NetMock.DocumentStoreEntry.Request, body: [NetMock.DocumentStoreEntry.CapturedResponse]) {
+        self.init(version: nil, header: request.header, body: body.map(\.response))
+    }
+}
+
 extension NetMock {
+    /// A struct containing the information associated to a given network request and response
     public struct DocumentStoreEntry {
-        let method: Method
-        let urlString: String
-        let statusCode: Int
-        let datetime: Date
-        let body: Data?
-        
-        public init(method: Method, urlString: String, statusCode: Int, body: Data?) {
-            self.method = method
-            self.urlString = urlString
-            self.statusCode = statusCode
-            self.datetime = Date()
-            self.body = body
+        /// A struct containing information associated with a request forwarded to NetMock
+        ///
+        /// NetMock documents and responses may be indexed internally under this type.
+        public struct Request : Hashable {
+            public let method: Method
+            public let urlString: String
+            
+            public init(_ method: Method, _ urlString: String) {
+                self.method = method
+                self.urlString = urlString
+            }
+            
+            var header: NetMock.Document.Header {
+                .init(method: method, urlString: urlString)
+            }
         }
         
-        func toDocumentResponse() -> Document.Response {
-            let timeFormatter = ISO8601DateFormatter()
+        /// A struct containing information associated with a single captured response
+        ///
+        /// This struct is used internally inside DocumentStore to store captured responses.
+        struct CapturedResponse : Hashable {
+            let statusCode: Int
+            let datetime: Date
+            let body: Data?
             
-            // Attempt to decode body to JSON and pretty print result
-            let decoded = self.body.flatMap { try? JSONSerialization.jsonObject(with: $0) }.flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.prettyPrinted]) }
+            public init(statusCode: Int, body: Data?) {
+                self.statusCode = statusCode
+                self.datetime = Date()
+                self.body = body
+            }
             
-            return .init(
-                header: .init(
-                    code: self.statusCode,
-                    labels: [timeFormatter.string(from: self.datetime)]
-                ),
-                body: decoded
-            )
+            var response: NetMock.Document.Response {
+                .init(header: .init(code: statusCode, labels: [datetime.ISO8601Format()]), body: body)
+            }
+        }
+
+        let request: Request
+        let response: CapturedResponse
+        
+        public init(method: Method, urlString: String, statusCode: Int, body: Data?) {
+            self.request = .init(method, urlString)
+            self.response = .init(statusCode: statusCode, body: body)
         }
     }
     
+    /// A singleton to capture network responses, structure them into NetMock documents, and persist them to the filesystem.
     public actor DocumentStore {
         public static let shared: DocumentStore = .init()
         
         private init() {}
         
-        private var documents: [Request: Document] = [:]
+        private var documents: [DocumentStoreEntry.Request: [DocumentStoreEntry.CapturedResponse]] = [:]
         
+        /// Store the DocumentStoreEntry to the DocumentStore singleton
+        /// - Parameter entry: DocumentStoreEntry containing the details of a provided network request and response.
         public func add(_ entry: DocumentStoreEntry) {
-            let request = Request(entry.method, entry.urlString)
-            let response = entry.toDocumentResponse()
-            documents[request, default: request.toDocument()].body.append(response)
+            let request = entry.request
+            let response = entry.response
+            documents[request, default: []].append(response)
         }
         
-        struct Request : Hashable {
-            let method: Method
-            let urlString: String
-            
-            init(_ method: Method, _ urlString: String) {
-                self.method = method
-                self.urlString = urlString
-            }
-            
-            func toDocument() -> NetMock.Document {
-                .init(
-                    version: nil,
-                    header: .init(
-                        method: method,
-                        urlString: urlString,
-                        sequence: []
-                    ),
-                    body: []
-                )
-            }
-        }
-        
+        /// Persist captured responses in DocumentStore to filesystem as .nm files
+        /// - Parameters:
+        ///   - file: The base directory where files will be written. Defaults to the app’s document directory.
+        ///   - modifyContents: A closure for transforming the saved file contents (e.g. redacting or generalising domains). Defaults to a closure with no effect.
+        ///   - customFilename: A closure for customising the file’s name. Defaults to the last component of the urlString (if a valid url) otherwise the full urlString.
+        ///   - customDirectory: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
         public func save(
             toFile file: URL? = nil,
             modifyContents: @escaping (String) -> String = {$0},
-            customFilename: @escaping (Method, String) -> String = {$1.split(separator: "/").last.map(String.init) ?? $1},
-            customDirectory: @escaping (Method, String) -> [String] = {method, urlString in urlString.split(separator: "/").dropLast().map(String.init) + [method.rawValue] }
+            customFilename: @escaping (DocumentStoreEntry.Request) -> String = {$0.urlString.split(separator: "/").last.map(String.init) ?? $0.urlString},
+            customDirectory: @escaping (DocumentStoreEntry.Request) -> [String] = {$0.urlString.split(separator: "/").dropLast().map(String.init) + [$0.method.rawValue] }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0
@@ -90,13 +99,14 @@ extension NetMock {
             }
             
             for document in self.documents {
-                let fileContents = modifyContents(document.value.description)
-                let data = fileContents.data(using: .utf8)
+                let fileContents = Document(request: document.key, body: document.value).description
+                let modifiedFileContents = modifyContents(fileContents)
+                let data = modifiedFileContents.data(using: .utf8)
                 
-                let directory: URL = customDirectory(document.key.method, document.key.urlString)
+                let directory: URL = customDirectory(document.key)
                     .reduce(documentsDirectory) { $0.appendingPathComponent($1) }
                 
-                let filename: String = customFilename(document.key.method, document.key.urlString)
+                let filename: String = customFilename(document.key)
                 
                 do {
                     try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)

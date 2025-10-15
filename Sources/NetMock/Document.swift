@@ -27,23 +27,21 @@ extension NetMock {
                     : lhs.major < rhs.major
             }
         }
-        
+    
         struct Header : Equatable, Sendable  {
-            enum Identifier : Equatable, Sendable {
-                case label(String), code(Int), live
-            }
 
             let method: Method
             let urlString: String
-            let sequence: [Identifier]
             
-            init(method: Method, urlString: String, sequence: [Identifier]) {
+            init(method: Method, urlString: String) {
                 self.method = method
                 self.urlString = urlString
-                self.sequence = sequence
             }
         }
         
+        enum Identifier : Equatable, Sendable {
+            case label(String), code(Int), live
+        }
         
         struct Response : Sendable {
             struct Header : Sendable {
@@ -51,12 +49,20 @@ extension NetMock {
                 let labels: [String]
             }
             
-            let header: Response.Header
+            let header: Header
             let body: Data?
         }
         
         let version: VersionNumber?
         let header: Header
+        let sequence: [Identifier]
         var body: [Response]
+        
+        init(version: VersionNumber?, header: Header, sequence: [Identifier] = [], body: [Response] = []) {
+            self.version = version
+            self.header = header
+            self.sequence = sequence
+            self.body = body
+        }
     }
 }
