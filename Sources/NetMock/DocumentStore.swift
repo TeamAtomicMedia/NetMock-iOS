@@ -8,7 +8,7 @@
 import Foundation
 
 extension NetMock.Document {
-    init(request: NetMock.Document.Header, body: [NetMock.DocumentStoreEntry.CapturedResponse]) {
+    init(request: NetMock.Request, body: [NetMock.DocumentStoreEntry.CapturedResponse]) {
         self.init(version: nil, header: request, body: body.map(\.response))
     }
 }
@@ -35,11 +35,11 @@ extension NetMock {
             }
         }
 
-        let request: Document.Header
+        let request: Request
         let response: CapturedResponse
         
-        public init(method: Method, urlString: String, statusCode: Int, body: Data?) {
-            self.request = .init(method: method, urlString: urlString)
+        public init(method: Method, url: URL, statusCode: Int, body: Data?) {
+            self.request = .init(method: method, url: url)
             self.response = .init(statusCode: statusCode, body: body)
         }
     }
@@ -50,7 +50,7 @@ extension NetMock {
         
         private init() {}
         
-        private var documents: [Document.Header: [DocumentStoreEntry.CapturedResponse]] = [:]
+        private var documents: [Request: [DocumentStoreEntry.CapturedResponse]] = [:]
         
         /// Store the DocumentStoreEntry to the DocumentStore singleton
         /// - Parameter entry: DocumentStoreEntry containing the details of a provided network request and response.
@@ -69,8 +69,8 @@ extension NetMock {
         public func save(
             toFile file: URL? = nil,
             modifyContents: @escaping (String) -> String = { $0 },
-            customFilename: @escaping (Document.Header) -> String = { $0.urlString.split(separator: "/").last.map(String.init) ?? $0.urlString },
-            customDirectory: @escaping (Document.Header) -> [String] = { $0.urlString.split(separator: "/").dropLast().map(String.init) + [$0.method.rawValue] }
+            customFilename: @escaping (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
+            customDirectory: @escaping (Request) -> [String] = { $0.url.pathComponents.dropLast() + [$0.method.rawValue] }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0

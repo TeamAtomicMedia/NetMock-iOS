@@ -9,8 +9,23 @@ import Foundation
 
 
 extension NetMock {
-    public enum Method : String, CaseIterable, Sendable {
+    public enum Method : String, CaseIterable, Sendable, Codable {
         case GET, PUT, POST, DELETE, PATCH
+    }
+
+    public enum Identifier : Equatable, Sendable {
+        case label(String), code(Int), live
+    }
+    
+    public struct Request : Equatable, Sendable, Hashable {
+        
+        public let method: Method
+        public let url: URL
+        
+        init(method: Method, url: URL) {
+            self.method = method
+            self.url = url
+        }
     }
 
     public struct Document : Sendable {
@@ -28,20 +43,6 @@ extension NetMock {
             }
         }
     
-        public struct Header : Equatable, Sendable, Hashable {
-
-            public let method: Method
-            public let urlString: String
-            
-            init(method: Method, urlString: String) {
-                self.method = method
-                self.urlString = urlString
-            }
-        }
-        
-        enum Identifier : Equatable, Sendable {
-            case label(String), code(Int), live
-        }
         
         struct Response : Sendable {
             struct Header : Sendable {
@@ -54,11 +55,11 @@ extension NetMock {
         }
         
         let version: VersionNumber?
-        let header: Header
+        let header: Request
         let sequence: [Identifier]
         var body: [Response]
         
-        init(version: VersionNumber?, header: Header, sequence: [Identifier] = [], body: [Response] = []) {
+        init(version: VersionNumber?, header: Request, sequence: [Identifier] = [], body: [Response] = []) {
             self.version = version
             self.header = header
             self.sequence = sequence

@@ -36,14 +36,14 @@ extension NetMock.Document.VersionNumber : CustomStringConvertible {
     }
 }
 
-extension NetMock.Document.Header : CustomStringConvertible {
+extension NetMock.Request : CustomStringConvertible {
     public var description: String {
-        "\(self.method) \(self.urlString)"
+        "\(self.method) \(self.url.absoluteString)"
     }
 }
 
-extension NetMock.Document.Identifier : CustomStringConvertible {
-    var description: String {
+extension NetMock.Identifier : CustomStringConvertible {
+    public var description: String {
         switch self {
         case .code(let code): "\(code)"
         case .label(let label): label

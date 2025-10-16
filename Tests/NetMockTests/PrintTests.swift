@@ -28,7 +28,7 @@ struct TestVersionNumber {
 
 @Suite
 struct TestHeader {
-    var header: NetMock.Document.Header { .init(method: .GET, urlString: "https://example.com") }
+    var header: NetMock.Request { .init(method: .GET, url: URL(string: "https://example.com")!) }
     
     @Test
     func testHeaderPrint() {
@@ -38,7 +38,7 @@ struct TestHeader {
 
 @Suite
 struct TestSequence {
-    var sequence: [NetMock.Document.Identifier] = [.label("Test"), .code(200), .live]
+    var sequence: [NetMock.Identifier] = [.label("Test"), .code(200), .live]
     
     @Test
     func testSequencePrint() {
@@ -83,8 +83,8 @@ struct TestResponse {
 
 @Suite struct TestDocument {
     var version: NetMock.Document.VersionNumber { .init(major: 1, minor: 0, patch: 0) }
-    var header: NetMock.Document.Header { .init(method: .GET, urlString: "https://example.com") }
-    let sequence: [NetMock.Document.Identifier] = [.label("Test"), .code(200), .live]
+    var header: NetMock.Request { .init(method: .GET, url: URL(string: "https://example.com")!) }
+    let sequence: [NetMock.Identifier] = [.label("Test"), .code(200), .live]
     var responses: [NetMock.Document.Response] {
         [
         .init(
