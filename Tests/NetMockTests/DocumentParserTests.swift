@@ -155,8 +155,10 @@ struct ParserTests {
         @Test func testInvalidHeader2() {
             let parser = NetMock.Document.Header.parser
             var input: Substring = "NEW https://shouldBreakOnMethodParse"[...]
-            let result = try? parser.complete().run(&input)
-            #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
+            
+            #expect(throws: ParseError.contextualError("Method", .expectedToken(.oneOf(NetMock.Method.allCases.map(\.rawValue))))) {
+                try parser.complete().run(&input)
+            }
         }
     }
     
