@@ -61,13 +61,12 @@ struct ParserTests {
     @Suite("Header Parsing")
     struct HeaderParsing {
         @Test func testValidHeader1() {
-            let parser = NetMock.Document.Header.parser
+            let parser = NetMock.Request.parser
             var input: Substring = "GET https://example.com/test"[...]
             do {
                 let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
-                #expect(result.urlString == "https://example.com/test")
-                #expect(result.sequence.isEmpty == true)
+                #expect(result.url.absoluteString == "https://example.com/test")
             } catch {
                 #expect(Bool(false), """
                     Parser failed with error: 
@@ -78,13 +77,12 @@ struct ParserTests {
         }
         
         @Test func testValidHeader2() {
-            let parser = NetMock.Document.Header.parser
-            var input: Substring = "GET https://example.com/test #Live"[...]
+            let parser = NetMock.Request.parser
+            var input: Substring = "GET https://example.com/test"[...]
             do {
                 let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
-                #expect(result.urlString == "https://example.com/test")
-                #expect(result.sequence == [.live])
+                #expect(result.url.absoluteString == "https://example.com/test")
             } catch {
                 #expect(Bool(false), """
                     Parser failed with error: 
@@ -95,13 +93,12 @@ struct ParserTests {
         }
         
         @Test func testValidHeader3() {
-            let parser = NetMock.Document.Header.parser
-            var input: Substring = "GET https://example.com/test 200"[...]
+            let parser = NetMock.Request.parser
+            var input: Substring = "GET https://example.com/test"[...]
             do {
                 let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
-                #expect(result.urlString == "https://example.com/test")
-                #expect(result.sequence == [.code(200)])
+                #expect(result.url.absoluteString == "https://example.com/test")
             } catch {
                 #expect(Bool(false), """
                     Parser failed with error: 
@@ -112,13 +109,12 @@ struct ParserTests {
         }
         
         @Test func testValidHeader4() {
-            let parser = NetMock.Document.Header.parser
-            var input: Substring = "GET https://example.com/test TEST"[...]
+            let parser = NetMock.Request.parser
+            var input: Substring = "GET https://example.com/test"[...]
             do {
                 let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
-                #expect(result.urlString == "https://example.com/test")
-                #expect(result.sequence == [.label("TEST")])
+                #expect(result.url.absoluteString == "https://example.com/test")
             } catch {
                 #expect(Bool(false), """
                     Parser failed with error: 
@@ -129,13 +125,12 @@ struct ParserTests {
         }
         
         @Test func testValidHeader5() {
-            let parser = NetMock.Document.Header.parser
-            var input: Substring = "GET https://example.com/test #Live 200 OK"[...]
+            let parser = NetMock.Request.parser
+            var input: Substring = "GET https://example.com/test"[...]
             do {
                 let result = try parser.complete().run(&input)
                 #expect(result.method == .GET)
-                #expect(result.urlString == "https://example.com/test")
-                #expect(result.sequence == [.live, .code(200), .label("OK")])
+                #expect(result.url.absoluteString == "https://example.com/test")
             } catch {
                 #expect(Bool(false), """
                     Parser failed with error: 
@@ -146,18 +141,31 @@ struct ParserTests {
         }
         
         @Test func testInvalidHeader1() {
-            let parser = NetMock.Document.Header.parser
+            let parser = NetMock.Request.parser
             var input: Substring = "GET"[...]
             let result = try? parser.complete().run(&input)
             #expect(result == nil, "Unexpectedly succeeded parsing: \(input)")
         }
         
         @Test func testInvalidHeader2() {
-            let parser = NetMock.Document.Header.parser
+            let parser = NetMock.Request.parser
             var input: Substring = "NEW https://shouldBreakOnMethodParse"[...]
             
             #expect(throws: ParseError.contextualError("Method", .expectedToken(.oneOf(NetMock.Method.allCases.map(\.rawValue))))) {
                 try parser.complete().run(&input)
+            }
+        }
+    }
+    
+    @Suite("Sequence Parser")
+    struct SequenceParsing {
+        @Test func testEmpty() throws {
+            var input: Substring = ""
+            
+            let result: [NetMock.Identifier]
+            
+            do {
+                result = try NetMock.Identifier.parser.
             }
         }
     }
@@ -407,8 +415,7 @@ struct ParserTests {
             #expect(result.version?.patch == 0)
             
             #expect(result.header.method == .GET)
-            #expect(result.header.urlString == "https://this.is.a.test.com/hello/world")
-            #expect(result.header.sequence == [.label("TEST1"), .label("TEST2"), .live, .code(200), .code(300)])
+            #expect(result.header.url.absoluteString == "https://this.is.a.test.com/hello/world")
             
             guard result.body.count == 4
             else {#expect(Bool(false), "Result body count is not 4, got \(result.body.count)"); return}
@@ -466,8 +473,7 @@ struct ParserTests {
             #expect(result.version == nil)
             
             #expect(result.header.method == .GET)
-            #expect(result.header.urlString == "graphql://Notifications")
-            #expect(result.header.sequence == [.code(200)])
+            #expect(result.header.url.absoluteString == "graphql://Notifications")
             
             guard result.body.count == 1
             else {#expect(Bool(false), "Result body count is not 1, got \(result.body.count)"); return}
@@ -512,8 +518,7 @@ struct ParserTests {
             #expect(result.version == nil)
             
             #expect(result.header.method == .GET)
-            #expect(result.header.urlString == "graphql://Notifications")
-            #expect(result.header.sequence == [.code(200)])
+            #expect(result.header.url.absoluteString == "graphql://Notifications")
             
             guard result.body.count == 1
             else {#expect(Bool(false), "Result body count is not 1, got \(result.body.count)"); return}
