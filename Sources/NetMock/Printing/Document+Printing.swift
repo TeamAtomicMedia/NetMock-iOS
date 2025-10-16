@@ -8,7 +8,7 @@
 import Foundation
 
 extension NetMock.Document: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         if let version = self.version {
             """
             \(version.description)
@@ -37,7 +37,7 @@ extension NetMock.Document.VersionNumber : CustomStringConvertible {
 }
 
 extension NetMock.Document.Header : CustomStringConvertible {
-    var description: String {
+    public var description: String {
         "\(self.method) \(self.urlString)"
     }
 }

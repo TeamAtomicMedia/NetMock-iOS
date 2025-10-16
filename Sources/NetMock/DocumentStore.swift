@@ -8,31 +8,14 @@
 import Foundation
 
 extension NetMock.Document {
-    init(request: NetMock.DocumentStoreEntry.Request, body: [NetMock.DocumentStoreEntry.CapturedResponse]) {
-        self.init(version: nil, header: request.header, body: body.map(\.response))
+    init(request: NetMock.Document.Header, body: [NetMock.DocumentStoreEntry.CapturedResponse]) {
+        self.init(version: nil, header: request, body: body.map(\.response))
     }
 }
 
 extension NetMock {
     /// A struct containing the information associated to a given network request and response
     public struct DocumentStoreEntry {
-        /// A struct containing information associated with a request forwarded to NetMock
-        ///
-        /// NetMock documents and responses may be indexed internally under this type.
-        public struct Request : Hashable {
-            public let method: Method
-            public let urlString: String
-            
-            public init(_ method: Method, _ urlString: String) {
-                self.method = method
-                self.urlString = urlString
-            }
-            
-            var header: NetMock.Document.Header {
-                .init(method: method, urlString: urlString)
-            }
-        }
-        
         /// A struct containing information associated with a single captured response
         ///
         /// This struct is used internally inside DocumentStore to store captured responses.
@@ -52,11 +35,11 @@ extension NetMock {
             }
         }
 
-        let request: Request
+        let request: Document.Header
         let response: CapturedResponse
         
         public init(method: Method, urlString: String, statusCode: Int, body: Data?) {
-            self.request = .init(method, urlString)
+            self.request = .init(method: method, urlString: urlString)
             self.response = .init(statusCode: statusCode, body: body)
         }
     }
@@ -67,7 +50,7 @@ extension NetMock {
         
         private init() {}
         
-        private var documents: [DocumentStoreEntry.Request: [DocumentStoreEntry.CapturedResponse]] = [:]
+        private var documents: [Document.Header: [DocumentStoreEntry.CapturedResponse]] = [:]
         
         /// Store the DocumentStoreEntry to the DocumentStore singleton
         /// - Parameter entry: DocumentStoreEntry containing the details of a provided network request and response.
@@ -85,9 +68,9 @@ extension NetMock {
         ///   - customDirectory: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
         public func save(
             toFile file: URL? = nil,
-            modifyContents: @escaping (String) -> String = {$0},
-            customFilename: @escaping (DocumentStoreEntry.Request) -> String = {$0.urlString.split(separator: "/").last.map(String.init) ?? $0.urlString},
-            customDirectory: @escaping (DocumentStoreEntry.Request) -> [String] = {$0.urlString.split(separator: "/").dropLast().map(String.init) + [$0.method.rawValue] }
+            modifyContents: @escaping (String) -> String = { $0 },
+            customFilename: @escaping (Document.Header) -> String = { $0.urlString.split(separator: "/").last.map(String.init) ?? $0.urlString },
+            customDirectory: @escaping (Document.Header) -> [String] = { $0.urlString.split(separator: "/").dropLast().map(String.init) + [$0.method.rawValue] }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0

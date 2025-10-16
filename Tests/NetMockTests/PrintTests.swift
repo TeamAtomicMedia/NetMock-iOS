@@ -89,7 +89,7 @@ struct TestResponse {
         [
         .init(
             header: .init(code: 200, labels: ["Test", "Success"]),
-            body: try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [.prettyPrinted])
+            body: "{\"key\": \"value\"}".data(using: .utf8)
         ),
         .init(
             header: .init(code: 500, labels: ["Error"]),

@@ -13,7 +13,7 @@ extension NetMock {
         case GET, PUT, POST, DELETE, PATCH
     }
 
-    struct Document : Sendable {
+    public struct Document : Sendable {
         struct VersionNumber : Comparable, Sendable {
             let major: Int
             let minor: Int
@@ -28,10 +28,10 @@ extension NetMock {
             }
         }
     
-        struct Header : Equatable, Sendable  {
+        public struct Header : Equatable, Sendable, Hashable {
 
-            let method: Method
-            let urlString: String
+            public let method: Method
+            public let urlString: String
             
             init(method: Method, urlString: String) {
                 self.method = method
