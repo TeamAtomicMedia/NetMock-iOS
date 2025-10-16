@@ -306,6 +306,97 @@ struct CommonParsers {
             #expect(input == "abc")
         }
     }
+    
+    @Suite
+    struct SpaceParser {
+        var parser: Parser<String> { .space() }
+
+        @Test
+        func testConsumesSingleSpace() throws {
+            var input: Substring = " abc"
+            let result = try parser.run(&input)
+            #expect(result == " ")
+            #expect(input == "abc")
+        }
+
+        @Test
+        func testConsumesMultipleSpaces() throws {
+            var input: Substring = "    abc"
+            let result = try parser.run(&input)
+            #expect(result == "    ")
+            #expect(input == "abc")
+        }
+
+        @Test
+        func testStopsBeforeNewline() throws {
+            var input: Substring = " \nabc"
+            let result = try parser.run(&input)
+            #expect(result == " ")
+            #expect(input == "\nabc")
+        }
+
+        @Test
+        func testTabsAreConsideredSpaces() throws {
+            var input: Substring = "\t\tabc"
+            let result = try parser.run(&input)
+            #expect(result == "\t\t")
+            #expect(input == "abc")
+        }
+
+        @Test
+        func testNoSpacesDoesNotConsumeAnything() {
+            var input: Substring = "abc"
+            let result = try? parser.run(&input)
+            #expect(result == nil)
+            #expect(input == "abc")
+        }
+
+        @Test
+        func testEmptyInputThrows() {
+            var input: Substring = ""
+            #expect(throws: Error.self) {
+                _ = try parser.run(&input)
+            }
+        }
+    }
+    
+    @Suite
+    struct NewlineParser {
+        var parser: Parser<String> { .newline() }
+
+        @Test
+        func testConsumesSingleNewline() throws {
+            var input: Substring = "\nabc"
+            let result = try parser.run(&input)
+            #expect(result == "\n")
+            #expect(input == "abc")
+        }
+
+        @Test
+        func testConsumesSpacesThenNewline() throws {
+            var input: Substring = "   \nabc"
+            let result = try parser.run(&input)
+            #expect(result == "   \n")
+            #expect(input == "abc")
+        }
+
+        @Test
+        func testNoNewlineThrows() {
+            var input: Substring = "   abc"
+            #expect(throws: Error.self) {
+                _ = try parser.run(&input)
+            }
+            #expect(input == "   abc")
+        }
+
+        @Test
+        func testEmptyInputThrows() {
+            var input: Substring = ""
+            #expect(throws: Error.self) {
+                _ = try parser.run(&input)
+            }
+        }
+    }
 }
 
 @Suite

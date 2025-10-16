@@ -32,6 +32,17 @@ extension Parser {
         }
     }
     
+    static func character(where predicate: @Sendable @escaping (Character) -> Bool) -> Parser<Character> {
+        .init { input in
+            let original = input
+            guard let nextChar = input.popFirst(), predicate(nextChar) else {
+                input = original
+                throw ParseError.expectedCharactersSatisfyingPredicate
+            }
+            return nextChar
+        }
+    }
+    
     static func token(_ str: String) -> Parser<String> {
         .init { input in
             guard input.hasPrefix(str)
@@ -117,5 +128,15 @@ extension Parser {
     
     static func optionalWhitespace() -> Parser<String?> {
         .whitespace().optional()
+    }
+    
+    static func newline() -> Parser<String> {
+        .space().optional(defaultValue: "").bind { consumedSpaces in
+            .character(where: \.isNewline).map { consumedSpaces + "\($0)" }
+        }
+    }
+    
+    static func space() -> Parser<String> {
+        .predicate { $0.isWhitespace && !$0.isNewline}
     }
 }
