@@ -157,16 +157,66 @@ struct ParserTests {
         }
     }
     
-    @Suite("Identifier Parsing")
-    struct IdentifierParsing {
+    @Suite("Sequence Parser")
+    struct SequenceParsing {
         @Test func testEmpty() throws {
             var input: Substring = ""
             
-            let result = try NetMock.Identifier.parser.sequence().run(&input)
+            let result = try NetMock.Identifier.parser
+                .sequence(separator: .whitespace(), allowEmpty: true)
+                .run(&input)
             
-            #expect(result.isEmpty == true)
+            #expect(result == [])
+            #expect(input == "")
         }
         
+        @Test func testEmptyBlocked() throws {
+            var input: Substring = ""
+            
+            #expect(throws: ParseError.expectedToken(.oneOf(["#Live", "number", "label"]))) {
+                try NetMock.Identifier.parser
+                    .sequence(separator: .whitespace(), allowEmpty: false)
+                    .run(&input)
+            }
+            #expect(input == "")
+        }
+        
+        @Test func testHelloWorldSequence() throws {
+            var input: Substring = "Hello world"
+            
+            let result = try NetMock.Identifier.parser
+                .sequence(separator: .whitespace())
+                .run(&input)
+            
+            #expect(result == ["Hello", "world"])
+            #expect(input == "")
+        }
+        
+        @Test func testHelloWorldSequenceTrailingWhitespace() throws {
+            var input: Substring = "Hello world  "
+            
+            let result = try NetMock.Identifier.parser
+                .sequence(separator: .whitespace(), allowTrailingSeparator: true)
+                .run(&input)
+            
+            #expect(result == ["Hello", "world"])
+            #expect(input == "")
+        }
+        
+        @Test func testHelloWorldSequenceTrailingWhitespaceDisallowed() throws {
+            var input: Substring = "Hello world  "
+            
+            let result = try NetMock.Identifier.parser
+                    .sequence(separator: .whitespace(), allowTrailingSeparator: false)
+                    .run(&input)
+            
+            #expect(result == ["Hello", "world"])
+            #expect(input == "  ")
+        }
+    }
+    
+    @Suite("Identifier Parsing")
+    struct IdentifierParsing {
         @Suite("Singular")
         struct Singular {
             @Test func testLive() throws {
