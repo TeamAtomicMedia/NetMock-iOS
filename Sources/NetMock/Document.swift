@@ -13,12 +13,29 @@ extension NetMock {
         case GET, PUT, POST, DELETE, PATCH
     }
 
-    public enum Identifier : Equatable, Sendable {
-        case label(String), code(Int), live
+    public enum Identifier : Equatable, Sendable, Codable {
+        case mock(Mock), live
+        
+        static func code(_ code: Int) -> Self { .mock(.code(code)) }
+        static func label(_ label: String) -> Self { .mock(.label(label)) }
+        
+        public enum Mock : Hashable, Sendable, Codable {
+            case code(Int)
+            case label(String)
+        }
+        
+        public init(_ string: String) {
+            if let code = Int(string) {
+                self = .code(code)
+            } else if string == "#Live" {
+                self = .live
+            } else {
+                self = .label(string)
+            }
+        }
     }
     
-    public struct Request : Equatable, Sendable, Hashable {
-        
+    public struct Request : Sendable, Hashable {
         public let method: Method
         public let url: URL
         

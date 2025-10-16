@@ -70,9 +70,9 @@ public actor NetMock {
         /// The URL whose response will be overridden.
         public var url: URL
         /// A list of response names or codes from the nm file to use as the response.
-        public var responses: [String]
+        public var responses: [Identifier]
         
-        public init(method: Method = .GET, url: URL, responses: [String]) {
+        public init(method: Method = .GET, url: URL, responses: [Identifier]) {
             self.method = method
             self.url = url
             self.responses = responses
@@ -85,7 +85,7 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - responses: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: Method = .GET, _ url: URL, response: String) {
+    public func override(_ method: Method = .GET, _ url: URL, response: Identifier) {
         override(method, url, responses: [response])
     }
     
@@ -95,7 +95,7 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - responses: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: Method = .GET, _ url: URL, responses: [String]) {
+    public func override(_ method: Method = .GET, _ url: URL, responses: [Identifier]) {
         applyOverride(Override(method: method, url: url, responses: responses))
     }
     
@@ -129,7 +129,7 @@ public actor NetMock {
         else { return false }
         let netMockRequest = Request(method: method, url: url)
         if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
-            let isLive = definition.responseSequence.first == "#Live" // If we see #Live in a sequence, don't intercept
+            let isLive = definition.responseSequence.first == .live // If we see #Live in a sequence, don't intercept
             return !isLive
         } else {
             return handleAllRequests
@@ -150,46 +150,24 @@ public actor NetMock {
         
         let netMockRequest = Request(method: method, url: url)
         
-        guard let response = definitions[netMockRequest]?.nextResponse() else {
-            if !handleAllRequests {
-                netMockRequestLogger.debug(
-                """
-                NetMock: No response found for request:
-                > \(url.absoluteString)
-                
-                NetMock should be correctly determining if a response is present, so seeing this indicates a bug in NetMock!
-                """
-                )
-            }
-            return nil
-        }
+        guard let response = definitions[netMockRequest]?.nextResponse()
+        else { return nil }
         
-        guard let statusCode = Int(response.statusCode) else {
-            netMockRequestLogger.debug(
-                """
-                NetMock: Failed to parse status code for:
-                > \(url.absoluteString)
-
-                Ensure the status code defined in the .nm file is a valid number!
-                """
-            )
-            return nil
-        }
         
-        if statusCode < 0 {
-            return .urlError(statusCode)
+        if response.code < 0 {
+            return .urlError(response.code)
         }
         
         guard let httpResponse = HTTPURLResponse(
             url: url,
-            statusCode: statusCode,
+            statusCode: response.code,
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
             netMockRequestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
-                > \(url.absoluteString) \(statusCode)
+                > \(url.absoluteString) \(response.code)
                 """
             )
             return nil

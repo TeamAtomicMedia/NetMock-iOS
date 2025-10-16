@@ -45,8 +45,8 @@ extension NetMock.Request : CustomStringConvertible {
 extension NetMock.Identifier : CustomStringConvertible {
     public var description: String {
         switch self {
-        case .code(let code): "\(code)"
-        case .label(let label): label
+        case .mock(.code(let code)): "\(code)"
+        case .mock(.label(let label)): label
         case .live: "#Live"
         }
     }
