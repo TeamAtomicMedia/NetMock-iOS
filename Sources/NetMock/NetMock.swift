@@ -6,6 +6,7 @@ import OSLog
 
 private let netMockSetupLogger = Logger(subsystem: "NetMock", category: "load")
 internal let netMockRequestLogger = Logger(subsystem: "NetMock", category: "request")
+internal let netMockCaptureLogger = Logger(subsystem: "NetMock", category: "capture")
 
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {

@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension NetMock.Document {
+private extension NetMock.Document {
     init(request: NetMock.Request, body: [NetMock.DocumentStoreEntry.CapturedResponse]) {
         self.init(version: nil, header: request, body: body.map(\.response))
     }
@@ -68,9 +68,9 @@ extension NetMock {
         ///   - customDirectory: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
         public func save(
             toFile file: URL? = nil,
-            modifyContents: @escaping (String) -> String = { $0 },
-            customFilename: @escaping (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
-            customDirectory: @escaping (Request) -> [String] = { $0.url.pathComponents.dropLast() + [$0.method.rawValue] }
+            modifyContents: (String) -> String = { $0 },
+            customFilename: (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
+            customDirectory: (Request) -> [String] = { $0.url.pathComponents.dropLast() + [$0.method.rawValue] }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0
@@ -84,8 +84,10 @@ extension NetMock {
             for document in self.documents {
                 let fileContents = Document(request: document.key, body: document.value).description
                 let modifiedFileContents = modifyContents(fileContents)
-                let data = modifiedFileContents.data(using: .utf8)
-                
+
+                guard let data = modifiedFileContents.data(using: .utf8)
+                else { continue }
+
                 let directory: URL = customDirectory(document.key)
                     .reduce(documentsDirectory) { $0.appendingPathComponent($1) }
                 
@@ -94,26 +96,27 @@ extension NetMock {
                 do {
                     try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)
                 } catch {
-                    print("Failed to create folder \(directory)")
+                    netMockCaptureLogger.debug("Failed to create folder \(directory)")
+                    break
                 }
                 
                 let url = directory.appendingPathComponent(filename).appendingPathExtension("nm")
-                print("Writing to \(url)")
+                netMockCaptureLogger.debug("Writing to \(url)")
                 
                 do {
-                    try data?.write(to: url, options: [.atomic, .completeFileProtection])
+                    try data.write(to: url, options: [.atomic, .completeFileProtection])
                     writeCount += 1
                 } catch {
-                    print("Failed to write document \(document.key): \(error)")
+                    netMockCaptureLogger.debug("Failed to write document \(document.key): \(error)")
                 }
             }
             
             guard documentCount != 0 else { return }
             
             if writeCount == documentCount {
-                print("All files successfully written")
+                netMockCaptureLogger.debug("All files successfully written")
             } else {
-                print("\(writeCount)/\(documentCount) Documents successfully written")
+                netMockCaptureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
             }
         }
     }

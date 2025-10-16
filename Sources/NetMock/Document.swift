@@ -9,16 +9,19 @@ import Foundation
 
 
 extension NetMock {
+    /// HTTP Method for NetMock file / captured response
     public enum Method : String, CaseIterable, Sendable, Codable {
         case GET, PUT, POST, DELETE, PATCH
     }
-
+    
+    /// An identifier present in the header of a NetMock file, **includes** `#Live`
     public enum Identifier : Equatable, Sendable, Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
         case mock(Mock), live
         
         static func code(_ code: Int) -> Self { .mock(.code(code)) }
         static func label(_ label: String) -> Self { .mock(.label(label)) }
         
+        /// An identifier present in the header of a NetMock file response, **excludes** `#Live`
         public enum Mock : Hashable, Sendable, Codable {
             case code(Int)
             case label(String)
@@ -53,7 +56,7 @@ extension NetMock {
         }
     }
 
-    public struct Document : Sendable {
+    struct Document : Sendable {
         struct VersionNumber : Comparable, Sendable {
             let major: Int
             let minor: Int
@@ -84,7 +87,7 @@ extension NetMock {
         let sequence: [Identifier]
         var body: [Response]
         
-        init(version: VersionNumber?, header: Request, sequence: [Identifier] = [], body: [Response] = []) {
+        init(version: VersionNumber? = nil, header: Request, sequence: [Identifier] = [], body: [Response] = []) {
             self.version = version
             self.header = header
             self.sequence = sequence

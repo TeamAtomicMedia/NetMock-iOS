@@ -123,7 +123,7 @@ extension NetMock {
             
             // Parse RESPONSE SEQUENCING from header, or default to first response
             
-            let responseOverride: [Identifier] = headerComponents.dropFirst(2).map(Identifier.init)
+            let responseOverride: [Identifier] = headerComponents.dropFirst(2).map(Identifier.init(_:))
             if responseOverride.isEmpty, let firstResponse {
                 self.responseSequence = [.mock(firstResponse)]
             } else {

@@ -298,13 +298,13 @@ class ApolloNetMockInterceptor: ApolloInterceptor {
         guard active else { return }
         
         let method: NetMock.Method = .init(operationType: Operation.operationType)
-        let urlString = "\(request.graphQLEndpoint.host ?? "no.host")/\(Operation.operationName)"
+        let urlString = URL(string: "\(request.graphQLEndpoint.host ?? "no.host")/\(Operation.operationName)")!
         let statusCode: Int = response?.httpResponse.statusCode ?? 408 // Assume timeout if response not provided
         let body: Data? = response?.rawData
         
         /// Build DocumentStoreEntry instance from response information
         /// Method and urlString should uniquely identify the response type
-        let storeEntry: NetMock.DocumentStoreEntry = .init(method: method, urlString: urlString, statusCode: statusCode, body: body)
+        let storeEntry: NetMock.DocumentStoreEntry = .init(method: method, url: url, statusCode: statusCode, body: body)
         
         /// Add NetMock response to DocumentStore
         Task {

@@ -9,20 +9,12 @@ import Foundation
 
 extension NetMock.Document: CustomStringConvertible {
     public var description: String {
-        if let version = self.version {
-            """
-            \(version.description)
-            \(self.header.description) \(self.sequence.map(\.description).joined(separator: " "))
+        """
+        \((version ?? .current).description)
+        \(self.header.description) \(self.sequence.map(\.description).joined(separator: " "))
 
-            \(self.body.map(\.description).joined(separator: "\n"))
-            """
-        } else {
-            """
-            \(self.header.description) \(self.sequence.map(\.description).joined(separator: " "))
-            
-            \(self.body.map(\.description).joined(separator: "\n"))
-            """
-        }
+        \(self.body.map(\.description).joined(separator: "\n"))
+        """
     }
 }
 
@@ -33,6 +25,10 @@ extension NetMock.Document.VersionNumber : CustomStringConvertible {
         } else {
             "NetMock \(self.major).\(self.minor)"
         }
+    }
+    
+    static var current: NetMock.Document.VersionNumber {
+        .init(major: 3, minor: 0, patch: 0)
     }
 }
 
@@ -54,7 +50,10 @@ extension NetMock.Identifier : CustomStringConvertible {
 
 extension NetMock.Document.Response : CustomStringConvertible {
     var description: String {
-        let formattedBody = body.flatMap { try? JSONSerialization.jsonObject(with: $0) }.flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.prettyPrinted]) }.flatMap{String(data: $0, encoding: .utf8)} ?? body.flatMap {String(data: $0, encoding: .utf8)}
+        let formattedBody = body
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) }
+            .flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.prettyPrinted]) }
+            .flatMap { String(data: $0, encoding: .utf8) } ?? body.flatMap { String(data: $0, encoding: .utf8) }
         
         return if let body = formattedBody {
         """
