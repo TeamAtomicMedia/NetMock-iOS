@@ -85,28 +85,28 @@ struct Tests {
     }
     
     @Test func overridesApplyToUnsequencedAPI() async throws {
-        await NetMock.shared.override("GET", NetworkAPI.exampleAPI, response: "500")
+        await NetMock.shared.override(.GET, NetworkAPI.exampleAPI, response: 500)
         
         try await assertParseFailure(await network.exampleGET())
         try await assertParseFailure(await network.exampleGET())
     }
     
     @Test func overridesApplyToSequencedAPI() async throws {
-        await NetMock.shared.override("GET", NetworkAPI.sequencedAPI, response: "500")
+        await NetMock.shared.override(.GET, NetworkAPI.sequencedAPI, response: 500)
         
         try await assertParseFailure(await network.exampleSequencedGET())
         try await assertParseFailure(await network.exampleSequencedGET())
     }
     
     @Test func overridesCanMakeAPISucceed() async throws {
-        await NetMock.shared.override("GET", NetworkAPI.exampleFailureAPI, response: "200")
+        await NetMock.shared.override(.GET, NetworkAPI.exampleFailureAPI, response: 200)
         
         assertGetResponse(try await network.exampleGETFailure())
         assertGetResponse(try await network.exampleGETFailure())
     }
     
     @Test func overridesCanMakeNoInternet() async throws {
-        await NetMock.shared.override("GET", NetworkAPI.exampleFailureAPI, response: "-1009")
+        await NetMock.shared.override(.GET, NetworkAPI.exampleFailureAPI, response: -1009)
         
         try await assertNoInternet(await network.exampleNoInternetAPI())
         try await assertNoInternet(await network.exampleNoInternetAPI())

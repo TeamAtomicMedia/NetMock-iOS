@@ -6,10 +6,11 @@ import OSLog
 
 private let netMockSetupLogger = Logger(subsystem: "NetMock", category: "load")
 internal let netMockRequestLogger = Logger(subsystem: "NetMock", category: "request")
+internal let netMockCaptureLogger = Logger(subsystem: "NetMock", category: "capture")
 
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {
-    private var definitions: [NetMockDefinition.Request: NetMockDefinition] = [:]
+    private var definitions: [Request: Definition] = [:]
     
     /// The NetMock instance used by NetMockURLProtocol to keep tracks of mock responses to substitute. Must be initialised before use.
     public static let shared = NetMock()
@@ -50,7 +51,7 @@ public actor NetMock {
         definitions.reserveCapacity(urls.count)
         for url in urls {
             do {
-                let definition = try NetMockDefinition(fileURL: url, urlParser: urlParser)
+                let definition = try Definition(fileURL: url, urlParser: urlParser)
                 self.definitions[definition.request] = definition
             } catch {
                 netMockSetupLogger.debug(
@@ -66,13 +67,13 @@ public actor NetMock {
     /// Represents a NetMock override which can change the responses returned to an alternative defined in the nm file.
     public struct Override: Codable {
         /// The HTTP request method to observe. Defaults to "GET".
-        public var method: String
+        public var method: Method
         /// The URL whose response will be overridden.
         public var url: URL
         /// A list of response names or codes from the nm file to use as the response.
-        public var responses: [String]
+        public var responses: [Identifier]
         
-        public init(method: String = "GET", url: URL, responses: [String]) {
+        public init(method: Method = .GET, url: URL, responses: [Identifier]) {
             self.method = method
             self.url = url
             self.responses = responses
@@ -85,7 +86,7 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - responses: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: String = "GET", _ url: URL, response: String) {
+    public func override(_ method: Method = .GET, _ url: URL, response: Identifier) {
         override(method, url, responses: [response])
     }
     
@@ -95,7 +96,7 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - responses: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: String = "GET", _ url: URL, responses: [String]) {
+    public func override(_ method: Method = .GET, _ url: URL, responses: [Identifier]) {
         applyOverride(Override(method: method, url: url, responses: responses))
     }
     
@@ -112,7 +113,7 @@ public actor NetMock {
     ///
     /// - Parameter override: The override to apply.
     public func applyOverride(_ override: Override) {
-        let request = NetMockDefinition.Request(method: override.method, url: override.url)
+        let request = Request(method: override.method, url: override.url)
         if override.responses.isEmpty {
             definitions[request] = nil
         } else {
@@ -124,12 +125,12 @@ public actor NetMock {
     // If a nm file hasn't been provided or couldn't be read, this should return false.
     func shouldHandle(_ request: URLRequest) -> Bool {
         guard
-            let method = request.httpMethod?.uppercased(),
+            let method = (request.httpMethod?.uppercased()).flatMap(Method.init),
             let url = request.url
         else { return false }
-        let netMockRequest = NetMockDefinition.Request(method: method, url: url)
+        let netMockRequest = Request(method: method, url: url)
         if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
-            let isLive = definition.responseSequence.first == "#Live" // If we see #Live in a sequence, don't intercept
+            let isLive = definition.responseSequence.first == .live // If we see #Live in a sequence, don't intercept
             return !isLive
         } else {
             return handleAllRequests
@@ -144,52 +145,30 @@ public actor NetMock {
     // Logs in DEBUG if an unexpected failure occurs.
     func mockResponse(for request: URLRequest) -> Response? {
         guard
-            let method = request.httpMethod?.uppercased(),
+            let method = (request.httpMethod?.uppercased()).flatMap(Method.init),
             let url = request.url
         else { return nil }
         
-        let netMockRequest = NetMockDefinition.Request(method: method, url: url)
+        let netMockRequest = Request(method: method, url: url)
         
-        guard let response = definitions[netMockRequest]?.nextResponse() else {
-            if !handleAllRequests {
-                netMockRequestLogger.debug(
-                """
-                NetMock: No response found for request:
-                > \(url.absoluteString)
-                
-                NetMock should be correctly determining if a response is present, so seeing this indicates a bug in NetMock!
-                """
-                )
-            }
-            return nil
-        }
+        guard let response = definitions[netMockRequest]?.nextResponse()
+        else { return nil }
         
-        guard let statusCode = Int(response.statusCode) else {
-            netMockRequestLogger.debug(
-                """
-                NetMock: Failed to parse status code for:
-                > \(url.absoluteString)
-
-                Ensure the status code defined in the .nm file is a valid number!
-                """
-            )
-            return nil
-        }
         
-        if statusCode < 0 {
-            return .urlError(statusCode)
+        if response.code < 0 {
+            return .urlError(response.code)
         }
         
         guard let httpResponse = HTTPURLResponse(
             url: url,
-            statusCode: statusCode,
+            statusCode: response.code,
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
             netMockRequestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
-                > \(url.absoluteString) \(statusCode)
+                > \(url.absoluteString) \(response.code)
                 """
             )
             return nil

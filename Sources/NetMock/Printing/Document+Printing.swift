@@ -5,10 +5,13 @@
 //  Created by Christopher Wainwright on 26/09/2025.
 //
 
+import Foundation
+
 extension NetMock.Document: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         """
-        \(self.version.map { "\($0.description)\n" } ?? "")\(self.header.description)
+        \((version ?? .current).description)
+        \(self.header.description) \(self.sequence.map(\.description).joined(separator: " "))
 
         \(self.body.map(\.description).joined(separator: "\n"))
         """
@@ -23,19 +26,23 @@ extension NetMock.Document.VersionNumber : CustomStringConvertible {
             "NetMock \(self.major).\(self.minor)"
         }
     }
-}
-
-extension NetMock.Document.Header : CustomStringConvertible {
-    var description: String {
-        "\(self.method) \(self.urlString) \(self.sequence.map(\.description).joined(separator: " "))"
+    
+    static var current: NetMock.Document.VersionNumber {
+        .init(major: 3, minor: 0, patch: 0)
     }
 }
 
-extension NetMock.Document.Header.Identifier : CustomStringConvertible {
-    var description: String {
+extension NetMock.Request : CustomStringConvertible {
+    public var description: String {
+        "\(self.method) \(self.url.absoluteString)"
+    }
+}
+
+extension NetMock.Identifier : CustomStringConvertible {
+    public var description: String {
         switch self {
-        case .code(let code): "\(code)"
-        case .label(let label): label
+        case .mock(.code(let code)): "\(code)"
+        case .mock(.label(let label)): label
         case .live: "#Live"
         }
     }
@@ -43,10 +50,23 @@ extension NetMock.Document.Header.Identifier : CustomStringConvertible {
 
 extension NetMock.Document.Response : CustomStringConvertible {
     var description: String {
+        let formattedBody = body
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) }
+            .flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.prettyPrinted]) }
+            .flatMap { String(data: $0, encoding: .utf8) } ?? body.flatMap { String(data: $0, encoding: .utf8) }
+        
+        return if let body = formattedBody {
         """
-        \(self.header.description)\(self.body.flatMap{String(data: $0, encoding: .utf8)}.map {"\n" + $0} ?? "")
+        \(self.header.description)
+        \(body)
         ---
         """
+        } else {
+        """
+        \(self.header.description)
+        ---
+        """
+        }
     }
 }
 
