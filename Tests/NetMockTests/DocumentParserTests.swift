@@ -157,15 +157,70 @@ struct ParserTests {
         }
     }
     
-    @Suite("Sequence Parser")
-    struct SequenceParsing {
+    @Suite("Identifier Parsing")
+    struct IdentifierParsing {
         @Test func testEmpty() throws {
             var input: Substring = ""
             
-            let result: [NetMock.Identifier]
+            let result = try NetMock.Identifier.parser.sequence().run(&input)
             
-            do {
-                result = try NetMock.Identifier.parser.
+            #expect(result.isEmpty == true)
+        }
+        
+        @Suite("Singular")
+        struct Singular {
+            @Test func testLive() throws {
+                var input: Substring = "#Live"
+                
+                let result = try NetMock.Identifier.parser.run(&input)
+                
+                #expect(result == .live)
+            }
+            
+            @Test func testCode() throws {
+                var input: Substring = "200"
+                
+                let result = try NetMock.Identifier.parser.run(&input)
+                
+                #expect(result == 200)
+            }
+            
+            @Test func testLabel() throws {
+                var input: Substring = "success"
+                
+                let result = try NetMock.Identifier.parser.run(&input)
+                
+                #expect(result == "success")
+            }
+        }
+        
+        @Suite("Multiple")
+        struct Multiple {
+            @Test func testCodeAndLabel() throws {
+                var input: Substring = "200 success"
+                
+                let result = try NetMock.Identifier.parser.sequence(separator: .whitespace()).run(&input)
+                
+                #expect(result[0] == 200)
+                #expect(result[1] == "success")
+            }
+            
+            @Test func testCodeAndLive() async throws {
+                var input: Substring = "200 #Live"
+                
+                let result = try NetMock.Identifier.parser.sequence(separator: .whitespace()).run(&input)
+                
+                #expect(result[0] == 200)
+                #expect(result[1] == .live)
+            }
+            
+            @Test func testLiveAndLabel() throws {
+                var input: Substring = "#Live success"
+                
+                let result = try NetMock.Identifier.parser.sequence(separator: .whitespace()).run(&input)
+                
+                #expect(result[0] == .live)
+                #expect(result[1] == "success")
             }
         }
     }
