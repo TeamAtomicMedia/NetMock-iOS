@@ -13,7 +13,7 @@ extension NetMock {
         case GET, PUT, POST, DELETE, PATCH
     }
 
-    public enum Identifier : Equatable, Sendable, Codable {
+    public enum Identifier : Equatable, Sendable, Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
         case mock(Mock), live
         
         static func code(_ code: Int) -> Self { .mock(.code(code)) }
@@ -25,13 +25,21 @@ extension NetMock {
         }
         
         public init(_ string: String) {
-            if let code = Int(string) {
-                self = .code(code)
-            } else if string == "#Live" {
+            self.init(stringLiteral: string)
+        }
+        
+        public init(stringLiteral value: String) {
+            if value == "#Live" {
                 self = .live
+            } else if let intValue = Int(value) {
+                self = .code(intValue)
             } else {
-                self = .label(string)
+                self = .label(value)
             }
+        }
+        
+        public init(integerLiteral value: Int) {
+            self = .code(value)
         }
     }
     

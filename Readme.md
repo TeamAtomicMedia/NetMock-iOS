@@ -208,13 +208,13 @@ GET example
 
 In unit tests, overrides can be provided using the NetMock API:
 ```swift
-NetMock.override("https://api.example.com/example", responses: ["Success", "500", "404", "SuccessLong"])
+NetMock.override(URL("https://api.example.com/example")!, responses: ["Success", 500, 404, "SuccessLong"])
 ```
 
 In UI tests, the UI test target could communicate to the app via launch arguments to build an API like so:
 ```swift
 AppRobot()
-    .netmockOverride("https://api.example.com/example", responses: "Success", "500", "404", "SuccessLong")
+    .netmockOverride(URL("https://api.example.com/example")!, responses: ["Success", 500, 404, "SuccessLong"])
 ```
 
 Note that consecutively run UI tests may preserve launch arguments, so the API used should account for this in resetting launch arguments even when no overrides are specified.
