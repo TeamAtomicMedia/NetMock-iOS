@@ -10,7 +10,7 @@ import Foundation
 extension NetMock.Document.VersionNumber : Parsable {
     static var parser: Parser<NetMock.Document.VersionNumber> {
         .init { input in
-            let preambleParser: Parser<Void> = (.token("NetMock") *> .whitespace()).discard()
+            let preambleParser: Parser<Void> = .token("NetMock") *> .whitespace().discard()
             
             let majorParser: Parser<Int> = .number()
             let auxiliaryNumber: Parser<Int> = .character(".") *> .number()
@@ -45,10 +45,10 @@ extension NetMock.Request : Parsable {
     static var parser: Parser<NetMock.Request> {
         .init { input in
             let methodParser: Parser<NetMock.Method> = .enumeration() <* .whitespace()
-            let urlStringParser: Parser<URL?> = .predicate { !$0.isWhitespace }.map(transform: URL.init(string:)) <* .whitespace().optional()
+            let urlParser: Parser<URL?> = .predicate { !$0.isWhitespace }.map(transform: URL.init(string:))
             
             let method = try (methodParser).context("Method").run(&input)
-            let url = try (urlStringParser).context("urlString").run(&input)
+            let url = try (urlParser).context("URL").run(&input)
             
             guard let url
             else { throw ParseError.expectedType("URL") }
@@ -86,15 +86,16 @@ extension NetMock.Document.Response : Parsable {
 extension NetMock.Document : Parsable {
     static var parser: Parser<NetMock.Document> {
         .init { input in
-            let versionParser = NetMock.Document.VersionNumber.parser.optional() <* .whitespace().optional()
-            let headerParser = NetMock.Request.parser <* .whitespace().optional()
-            let sequenceParser = NetMock.Identifier.parser.sequence(separator: .predicate { $0.isWhitespace && !$0.isNewline })
+            let versionParser = (NetMock.Document.VersionNumber.parser <* .newline()).optional()
+            let headerParser = NetMock.Request.parser <* .space().optional()
+            let sequenceParser = NetMock.Identifier.parser.sequence(separator: .space())
+            let doubleNewlineParser = Parser<Void>.newline() *> Parser<Void>.newline().discard()
             let bodyParser = NetMock.Document.Response.parser.sequence(separator: .whitespace())
             
             let version = try versionParser.run(&input)
             let header = try headerParser.run(&input)
             let sequence = try sequenceParser.run(&input)
-            try Parser<Void>.predicate { $0.isNewline }.discard().run(&input)
+            try doubleNewlineParser.run(&input)
             let body = try bodyParser.run(&input)
             
             return .init(version: version, header: header, sequence: sequence, body: body)
