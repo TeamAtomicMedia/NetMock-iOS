@@ -97,7 +97,7 @@ extension NetMock {
                     fallthrough
                 case _:
                     let request = self.request
-                    netMockRequestLogger.debug(
+                    NetMock.requestLogger.debug(
                     """
                     NetMock: Response definition not found for \(identifier.description) on request:
                     > \(request.method.rawValue) \(request.url)

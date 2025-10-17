@@ -96,27 +96,27 @@ extension NetMock {
                 do {
                     try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)
                 } catch {
-                    netMockCaptureLogger.debug("Failed to create folder \(directory)")
+                    NetMock.captureLogger.debug("Failed to create folder \(directory)")
                     break
                 }
                 
                 let url = directory.appendingPathComponent(filename).appendingPathExtension("nm")
-                netMockCaptureLogger.debug("Writing to \(url)")
+                NetMock.captureLogger.debug("Writing to \(url)")
                 
                 do {
                     try data.write(to: url, options: [.atomic, .completeFileProtection])
                     writeCount += 1
                 } catch {
-                    netMockCaptureLogger.debug("Failed to write document \(document.key): \(error)")
+                    NetMock.captureLogger.debug("Failed to write document \(document.key): \(error)")
                 }
             }
             
             guard documentCount != 0 else { return }
             
             if writeCount == documentCount {
-                netMockCaptureLogger.debug("All files successfully written")
+                NetMock.captureLogger.debug("All files successfully written")
             } else {
-                netMockCaptureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
+                NetMock.captureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
             }
         }
     }

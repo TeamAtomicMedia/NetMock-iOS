@@ -162,7 +162,7 @@ public actor NetMock {
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
-            netMockRequestLogger.debug(
+            NetMock.requestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
                 > \(url.absoluteString) \(response.header.code)
