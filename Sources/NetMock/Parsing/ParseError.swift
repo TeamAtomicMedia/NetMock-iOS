@@ -12,7 +12,7 @@ fileprivate extension String {
     }
 }
 
-enum ParseError: Error, CustomStringConvertible {
+enum ParseError: Error, CustomStringConvertible, Equatable {
     var description: String {
         switch (self) {
         case .expectedCharacter(let char): return "Expected Character '\(char)'"
@@ -54,24 +54,4 @@ enum ParseError: Error, CustomStringConvertible {
     case incompleteParse(Substring)
     indirect case contextualError(String, ParseError)
     indirect case eitherError(ParseError, ParseError)
-}
-
-extension ParseError: Equatable {
-    static func == (lhs: ParseError, rhs: ParseError) -> Bool {
-        switch (lhs, rhs) {
-        case (.expectedWhitespace, .expectedWhitespace) : true
-        case (.expectedTerminationSequence, .expectedTerminationSequence) : true
-        case (.expectedNumber, .expectedNumber) : true
-        case (.expectedAlphaNumericString, .expectedAlphaNumericString) : true
-        case (.expectedCharactersSatisfyingPredicate, .expectedCharactersSatisfyingPredicate) : true
-        case (.expectedCharacter(let a), .expectedCharacter(let b)) : a == b
-        case (.expectedToken(let a), .expectedToken(let b)) : a == b
-        case (.expectedType(let a), .expectedType(let b)) : a == b
-        case (.incompleteParse(let a), .incompleteParse(let b)) : a == b
-        case (.contextualError(let contextA, let errorA), .contextualError(let contextB, let errorB)) : contextA == contextB && errorA == errorB
-        case (.eitherError(let errorA1, let errorA2), .eitherError(let errorB1, let errorB2)):
-            errorA1 == errorB1 && errorA2 == errorB2
-        default: false
-        }
-    }
 }
