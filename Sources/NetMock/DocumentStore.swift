@@ -22,15 +22,15 @@ extension NetMock {
         struct CapturedResponse : Hashable {
             let statusCode: Int
             let datetime: Date
-            let body: Data?
+            let body: Data
             
-            public init(statusCode: Int, body: Data?) {
+            public init(statusCode: Int, body: Data) {
                 self.statusCode = statusCode
                 self.datetime = Date()
                 self.body = body
             }
             
-            var response: NetMock.Document.Response {
+            var response: NetMock.Response {
                 .init(header: .init(code: statusCode, labels: [datetime.ISO8601Format()]), body: body)
             }
         }
@@ -38,7 +38,7 @@ extension NetMock {
         let request: Request
         let response: CapturedResponse
         
-        public init(method: Method, url: URL, statusCode: Int, body: Data?) {
+        public init(method: Method, url: URL, statusCode: Int, body: Data) {
             self.request = .init(method: method, url: url)
             self.response = .init(statusCode: statusCode, body: body)
         }
@@ -96,27 +96,27 @@ extension NetMock {
                 do {
                     try FileManager().createDirectory(at: directory, withIntermediateDirectories: true)
                 } catch {
-                    netMockCaptureLogger.debug("Failed to create folder \(directory)")
+                    NetMock.captureLogger.debug("Failed to create folder \(directory)")
                     break
                 }
                 
                 let url = directory.appendingPathComponent(filename).appendingPathExtension("nm")
-                netMockCaptureLogger.debug("Writing to \(url)")
+                NetMock.captureLogger.debug("Writing to \(url)")
                 
                 do {
                     try data.write(to: url, options: [.atomic, .completeFileProtection])
                     writeCount += 1
                 } catch {
-                    netMockCaptureLogger.debug("Failed to write document \(document.key): \(error)")
+                    NetMock.captureLogger.debug("Failed to write document \(document.key): \(error)")
                 }
             }
             
             guard documentCount != 0 else { return }
             
             if writeCount == documentCount {
-                netMockCaptureLogger.debug("All files successfully written")
+                NetMock.captureLogger.debug("All files successfully written")
             } else {
-                netMockCaptureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
+                NetMock.captureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
             }
         }
     }

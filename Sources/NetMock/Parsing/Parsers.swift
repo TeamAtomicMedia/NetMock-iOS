@@ -90,10 +90,9 @@ extension Parser {
     
     static func number() -> Parser<Int> {
         .init { input in
-            let numberPrefix = input.prefix { ( $0 >= "0" && $0 <= "9" ) }
-            guard !numberPrefix.isEmpty
+            let numberPrefix = input.prefix { ( $0 >= "0" && $0 <= "9" || $0 == "-" ) }
+            guard let intValue = Int(String(numberPrefix))
             else { throw ParseError.expectedNumber }
-            let intValue = Int(String(numberPrefix))!
             input.removeFirst(numberPrefix.count)
             return intValue
         }

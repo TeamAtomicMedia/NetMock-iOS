@@ -6,22 +6,14 @@
 //
 
 import Foundation
-import OSLog
 
 extension NetMock {
     struct Definition {
         
         enum LoadError: Error {
             case invalidFileFormat
-            case invalidStructure
-            case invalidHeaderStructure
-            case invalidResponseStructure
-            case invalidHTTPMethod
+            case incompleteParse
             case invalidURL
-        }
-    
-        struct Response {
-            var code: Int, body: String
         }
         
         /// The request which will use this local override.
@@ -34,102 +26,46 @@ extension NetMock {
         private(set) var availableResponses: [Identifier.Mock: Response]
         
         
-        init(fileURL: URL, urlParser: (String) -> URL?) throws {
+        init(fileURL: URL, urlParser: @Sendable @escaping (String) -> URL?) throws {
             let data = try Data(contentsOf: fileURL)
+            
             guard let contents = String(data: data, encoding: .utf8) else {
                 throw LoadError.invalidFileFormat
             }
+            
             try self.init(contents, urlParser: urlParser)
         }
-        init(_ string: String, urlParser: (String) -> URL?) throws {
-            var lines = string.components(separatedBy: "\n")
+        
+        init(_ contents: String, urlParser: @Sendable @escaping (String) -> URL?) throws {
+            var contentsSubstring = contents[...]
+            let document: NetMock.Document = try .parser(with: urlParser).run(&contentsSubstring)
             
-            // Parse VERSION STRING
-            
-            let netMockVersion: String
-            if let version = lines.first, version.hasPrefix("NetMock") {
-                lines.removeFirst()
-                netMockVersion = version.components(separatedBy: " ").last!
-            } else {
-                netMockVersion = "1.0.0"
-            }
-            _ = netMockVersion // Use when making breaking changes to ensure backwards-compatibility
-            
-            // Parse METHOD and URL
-            
-            guard let header = lines.first else {
-                throw LoadError.invalidStructure
-            }
-            lines.removeFirst()
-            let headerComponents = header.components(separatedBy: " ")
-            guard headerComponents.count >= 2 else {
-                throw LoadError.invalidHeaderStructure
-            }
-            guard let url = urlParser(headerComponents[1]) else {
-                throw LoadError.invalidURL
+            if !contentsSubstring.isEmpty {
+                throw LoadError.incompleteParse
             }
             
-            guard let method = Method(rawValue: headerComponents[0].uppercased()) else {
-                throw LoadError.invalidHTTPMethod
+            try document.validate()
+            
+            self.request = document.header
+   
+            self.responseSequence = document.sequence
+            
+            if self.responseSequence.isEmpty, let code = document.body.first?.header.code {
+                self.responseSequence = [.code(code)]
             }
             
-            self.request = Request(
-                method: method,
-                url: url
-            )
-            
-            // Parse BLANK LINE if responses are defined
-            
-            if let nextLine = lines.first {
-                guard nextLine.isEmpty else {
-                    throw LoadError.invalidStructure
+            let identifierResponsePairs: [(Identifier.Mock, Response)] = document.body
+                .flatMap { response in
+                    ([Identifier.Mock.code(response.header.code)] + response.header.labels.map(Identifier.Mock.label))
+                        .map { identifier in
+                            (identifier, response)
+                        }
                 }
-                lines.removeFirst()
+            
+            self.availableResponses = Dictionary(identifierResponsePairs) { value1, value2 in
+                // Always default to the existing value
+                value1
             }
-            
-            // Parse RESPONSES
-            
-            var firstResponse: Identifier.Mock? = nil
-            if !lines.isEmpty {
-                let responseDefinition = lines.joined(separator: "\n")
-                
-                let responses = responseDefinition
-                    .components(separatedBy: "\n---\n")
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-                self.availableResponses = Dictionary(minimumCapacity: responses.count)
-                for response in responses.reversed() {
-                    // Allow whitespace before & after each response
-                    let response = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let responseLines = response.components(separatedBy: "\n")
-                    // Parse first line as `NAME? STATUSCODE` where NAME? is optionally provided. We also handle providing multiple names, for cases like migrating to new names
-                    guard
-                        let responseHeaderComponents = responseLines.first?.components(separatedBy: " "),
-                        let responseCode = responseHeaderComponents.first.flatMap(Int.init)
-                    else {
-                        throw LoadError.invalidResponseStructure
-                    }
-                    let responseBody = responseLines.dropFirst().joined(separator: "\n")
-                    for name in responseHeaderComponents.dropFirst() {
-                        self.availableResponses[.label(name)] = Response(code: responseCode, body: responseBody)
-                    }
-                    self.availableResponses[.code(responseCode)] = Response(code: responseCode, body: responseBody)
-                    firstResponse = .code(responseCode)
-                }
-            } else {
-                self.availableResponses = [:]
-            }
-            lines.removeAll()
-            
-            // Parse RESPONSE SEQUENCING from header, or default to first response
-            
-            let responseOverride: [Identifier] = headerComponents.dropFirst(2).map(Identifier.init(_:))
-            if responseOverride.isEmpty, let firstResponse {
-                self.responseSequence = [.mock(firstResponse)]
-            } else {
-                self.responseSequence = Array(responseOverride)
-            }
-            assert(!responseSequence.dropLast().contains(.live), "#Live is only supported as the final entry in a sequence")
         }
         
         /// Configured a new responseSequence different to that defined in the original source.
@@ -141,7 +77,7 @@ extension NetMock {
         
         func response(for identifier: Identifier.Mock) -> Response? {
             if case let .code(code) = identifier, code < 0 {
-                Response(code: code, body: "")
+                .init(header: .init(code: code, labels: []), body: Data())
             } else {
                 availableResponses[identifier]
             }
@@ -161,7 +97,7 @@ extension NetMock {
                     fallthrough
                 case _:
                     let request = self.request
-                    netMockRequestLogger.debug(
+                    NetMock.requestLogger.debug(
                     """
                     NetMock: Response definition not found for \(identifier.description) on request:
                     > \(request.method.rawValue) \(request.url)

@@ -7,8 +7,8 @@
 
 import Foundation
 
-extension NetMock.Document.VersionNumber : Parsable {
-    static var parser: Parser<NetMock.Document.VersionNumber> {
+extension NetMock.VersionNumber : Parsable {
+    static var parser: Parser<NetMock.VersionNumber> {
         .init { input in
             let preambleParser: Parser<Void> = .token("NetMock") *> .whitespace().discard()
             
@@ -43,25 +43,32 @@ extension NetMock.Identifier : Parsable {
 
 extension NetMock.Request : Parsable {
     static var parser: Parser<NetMock.Request> {
+        self.parser(with: URL.init(string:))
+    }
+    
+    /// Parse Document with custom URLHandler
+    /// - Parameter urlHandler: A closure to convert from the parsed document urlString to an optional URL. Returning a nil value from this closure will cause the Request parser to fail.
+    /// - Returns: A Request parser with the custom urlHandler behaviour.
+    static func parser(with urlHandler: @Sendable @escaping (String) -> URL?) -> Parser<NetMock.Request> {
         .init { input in
             let methodParser: Parser<NetMock.Method> = .enumeration() <* .whitespace()
-            let urlParser: Parser<URL?> = .predicate { !$0.isWhitespace }.map(transform: URL.init(string:))
+            let urlStringParser: Parser<String> = .predicate { !$0.isWhitespace }
             
-            let method = try (methodParser).context("Method").run(&input)
-            let url = try (urlParser).context("URL").run(&input)
+            let method = try methodParser.context("Method").run(&input)
+            let urlString = try urlStringParser.context("URLString").run(&input)
             
-            guard let url
-            else { throw ParseError.expectedType("URL") }
+            guard let url = urlHandler(urlString)
+            else { throw NetMock.Definition.LoadError.invalidURL }
             
             return .init(method: method, url: url)
         }
     }
 }
 
-extension NetMock.Document.Response : Parsable {
-    static var parser: Parser<NetMock.Document.Response> {
+extension NetMock.Response : Parsable {
+    static var parser: Parser<NetMock.Response> {
         .init { input in
-            let headerParser: Parser<NetMock.Document.Response.Header> = .init { input in
+            let headerParser: Parser<NetMock.Response.Header> = .init { input in
                 let codeParser: Parser<Int> = .number()
                 let labelParser: Parser<[String]> = .predicate(allowEmpty: true) { $0 != "\n" }.map { $0.components(separatedBy: " ").filter { $0 != ""} }
                 let code = try codeParser.run(&input)
@@ -69,14 +76,14 @@ extension NetMock.Document.Response : Parsable {
                 return .init(code: code, labels: labels)
             }.context("Header")
             
-            let bodyParser: Parser<Data?> = Parser<String>
+            let bodyParser: Parser<Data> = Parser<String>
                 .until(terminator: .token("\n---"), allowEOF: true, consumeTerminator: true)
                 .map { $0.trimmingCharacters(in: .newlines) }
-                .map { $0.isEmpty ? nil : $0.data(using: .utf8) }
+                .map { $0.data(using: .utf8) ?? Data() }
                 .context("Body")
             
-            let header: NetMock.Document.Response.Header = try headerParser.run(&input)
-            let body: Data? = try bodyParser.run(&input)
+            let header: NetMock.Response.Header = try headerParser.run(&input)
+            let body: Data = try bodyParser.run(&input)
             
             return .init(header: header, body: body)
         }
@@ -85,12 +92,19 @@ extension NetMock.Document.Response : Parsable {
 
 extension NetMock.Document : Parsable {
     static var parser: Parser<NetMock.Document> {
+        self.parser(with: URL.init(string:))
+    }
+    
+    /// Parse Document with custom URLHandler
+    /// - Parameter urlHandler: A closure to convert from the parsed document urlString to an optional URL. Returning a nil value from this closure will cause the Request parser to fail.
+    /// - Returns: A Document parser with the custom urlHandler behaviour.
+    static func parser(with urlHandler: @Sendable @escaping (String) -> URL?) -> Parser<NetMock.Document> {
         .init { input in
-            let versionParser = (NetMock.Document.VersionNumber.parser <* .newline()).optional()
-            let headerParser = NetMock.Request.parser <* .space().optional()
+            let versionParser = (NetMock.VersionNumber.parser <* .newline()).optional()
+            let headerParser = NetMock.Request.parser(with: urlHandler) <* .space().optional()
             let sequenceParser = NetMock.Identifier.parser.sequence(separator: .space())
             let doubleNewlineParser = Parser<Void>.newline() *> Parser<Void>.newline().discard()
-            let bodyParser = NetMock.Document.Response.parser.sequence(separator: .whitespace())
+            let bodyParser = NetMock.Response.parser.sequence(separator: .whitespace())
             
             let version = try versionParser.run(&input)
             let header = try headerParser.run(&input)
