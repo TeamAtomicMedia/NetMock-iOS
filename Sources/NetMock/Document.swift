@@ -64,8 +64,8 @@ extension NetMock {
         static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.major == rhs.major
             ? lhs.minor == rhs.minor
-            ? lhs.patch ?? 0 < rhs.patch ?? 0
-            : lhs.minor < rhs.minor
+                ? lhs.patch ?? 0 < rhs.patch ?? 0
+                : lhs.minor < rhs.minor
             : lhs.major < rhs.major
         }
     }
