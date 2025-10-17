@@ -10,12 +10,8 @@ extension Parser {
     /// Functor
     ///
     /// Functor Operator (transform value inside Monadic context of Parser)
-    func map<U>(transform: @Sendable @escaping (T) -> U) -> Parser<U> {
-        Parser<U> { input in
-            transform(try self.run(&input))
-        }
-    }
-    
+    /// - Parameter transform: An operation to perform on a parsers result after parsing has completed.
+    /// - Returns: A parser with the transformation mapped to its output.
     func map<U>(transform: @Sendable @escaping (T) throws -> U) -> Parser<U> {
         Parser<U> { input in
             try transform(try self.run(&input))
