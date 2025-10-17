@@ -407,8 +407,7 @@ struct ParserTests {
             #expect(result.header.method == .GET)
             #expect(result.header.url.absoluteString == "https://this.is.a.test.com/hello/world")
             
-            guard result.body.count == 4
-            else {#expect(Bool(false), "Result body count is not 4, got \(result.body.count)"); return}
+            #expect(result.body.count == 4)
             
             #expect(result.body[0].header.code == 200)
             #expect(result.body[0].header.labels == ["simple"])
@@ -454,8 +453,7 @@ struct ParserTests {
             #expect(result.header.method == .GET)
             #expect(result.header.url.absoluteString == "graphql://Notifications")
             
-            guard result.body.count == 1
-            else {#expect(Bool(false), "Result body count is not 1, got \(result.body.count)"); return}
+            #expect(result.body.count == 1)
             
             #expect(result.body[0].header.code == 200)
             #expect(result.body[0].header.labels == ["2025-10-01T12:51:05Z"])
@@ -481,15 +479,14 @@ struct ParserTests {
                 }
                 """
             var substring: Substring = input[...]
-            var result = try NetMock.Document.parser.complete().run(&substring)
+            let result = try NetMock.Document.parser.complete().run(&substring)
             
             #expect(result.version == nil)
             
             #expect(result.header.method == .GET)
             #expect(result.header.url.absoluteString == "graphql://Notifications")
             
-            guard result.body.count == 1
-            else {#expect(Bool(false), "Result body count is not 1, got \(result.body.count)"); return}
+            #expect(result.body.count == 1)
             
             #expect(result.body[0].header.code == 200)
             #expect(result.body[0].header.labels == ["2025-10-01T12:51:05Z"])
@@ -529,8 +526,7 @@ struct ParserTests {
             #expect(result.header.method == .GET)
             #expect(result.header.url.absoluteString == "https://this.is.a.test.com/hello/world")
             
-            guard result.body.count == 4
-            else {#expect(Bool(false), "Result body count is not 4, got \(result.body.count)"); return}
+            #expect(result.body.count == 4)
             
             #expect(result.body[0].header.code == 200)
             #expect(result.body[0].header.labels == ["simple"])

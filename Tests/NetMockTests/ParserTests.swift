@@ -423,10 +423,9 @@ struct ParserModifiers {
         }
         
         @Test
-        func testSuccessConsumesInput() {
+        func testSuccessConsumesInput() throws {
             var input: Substring = "a1c"
-            guard let result = try? parser.atomic().run(&input)
-            else { #expect(Bool(false)); return }
+            let result = try parser.atomic().run(&input)
             #expect(result == ("a", 1))
             #expect(input == "c")
         }
