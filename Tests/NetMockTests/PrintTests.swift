@@ -14,8 +14,8 @@ import Testing
 struct PrintingTests {
     @Suite
     struct TestVersionNumber {
-        var versionNumberLong: NetMock.Document.VersionNumber { .init(major: 10, minor: 10, patch: 10) }
-        var versionNumberAbbreviated: NetMock.Document.VersionNumber { .init(major: 10, minor: 10, patch: nil) }
+        var versionNumberLong: NetMock.VersionNumber { .init(major: 10, minor: 10, patch: 10) }
+        var versionNumberAbbreviated: NetMock.VersionNumber { .init(major: 10, minor: 10, patch: nil) }
         
         @Test
         func testVersionPrintLong() {
@@ -50,11 +50,11 @@ struct PrintingTests {
     
     @Suite
     struct TestResponse {
-        var header: NetMock.Document.Response.Header { .init(code: 200, labels: ["Test", "Success"]) }
-        var response1: NetMock.Document.Response { .init(header: header, body: "TEST BODY".data(using: .utf8)) }
+        var header: NetMock.Response.Header { .init(code: 200, labels: ["Test", "Success"]) }
+        var response1: NetMock.Response { .init(header: header, body: "TEST BODY".data(using: .utf8)!) }
         var response2Body = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [.prettyPrinted])
-        var response2: NetMock.Document.Response { .init(header: header, body: response2Body) }
-        var response3: NetMock.Document.Response { .init(header: header, body: nil) }
+        var response2: NetMock.Response { .init(header: header, body: response2Body) }
+        var response3: NetMock.Response { .init(header: header, body: Data()) }
         
         @Test
         func testHeaderPrint() {
@@ -84,22 +84,22 @@ struct PrintingTests {
     }
     
     @Suite struct TestDocument {
-        var version: NetMock.Document.VersionNumber { .init(major: 1, minor: 0, patch: 0) }
+        var version: NetMock.VersionNumber { .init(major: 1, minor: 0, patch: 0) }
         var header: NetMock.Request { .init(method: .GET, url: URL(string: "https://example.com")!) }
         let sequence: [NetMock.Identifier] = ["Test", 200, .live]
-        var responses: [NetMock.Document.Response] {
+        var responses: [NetMock.Response] {
             [
                 .init(
                     header: .init(code: 200, labels: ["Test", "Success"]),
-                    body: "{\"key\": \"value\"}".data(using: .utf8)
+                    body: "{\"key\": \"value\"}".data(using: .utf8)!
                 ),
                 .init(
                     header: .init(code: 500, labels: ["Error"]),
-                    body: "The Server Crashed!".data(using: .utf8)
+                    body: "The Server Crashed!".data(using: .utf8)!
                 ),
                 .init(
                     header: .init(code: 404, labels: ["NotFound"]),
-                    body: nil
+                    body: Data()
                 )
             ]
         }

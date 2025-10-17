@@ -6,6 +6,7 @@
 
 import Testing
 @testable import NetMock
+import Foundation
 
 @Suite
 struct ParserTests {
@@ -13,21 +14,21 @@ struct ParserTests {
     struct VersionParsing {
         @Test func testValidVersion1() throws {
             var input: Substring = "NetMock 1.2"
-            let parser = NetMock.Document.VersionNumber.parser
+            let parser = NetMock.VersionNumber.parser
             let result = try parser.complete().run(&input)
-            #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: nil))
+            #expect(result == NetMock.VersionNumber(major: 1, minor: 2, patch: nil))
         }
         
         @Test func testValidVersion2() throws {
             var input: Substring = "NetMock 1.2.3"
-            let parser = NetMock.Document.VersionNumber.parser
+            let parser = NetMock.VersionNumber.parser
             let result = try parser.complete().run(&input)
-            #expect(result == NetMock.Document.VersionNumber(major: 1, minor: 2, patch: 3))
+            #expect(result == NetMock.VersionNumber(major: 1, minor: 2, patch: 3))
         }
         
         @Test func testInvalidVersion1() {
             var input = "NetMock 1.x" // Invalid minor version 'x'
-            let parser = NetMock.Document.VersionNumber.parser
+            let parser = NetMock.VersionNumber.parser
             #expect(throws: ParseError.expectedNumber) {
                 try parser.complete().run(&input)
             }
@@ -35,7 +36,7 @@ struct ParserTests {
         
         @Test func testInvalidVersion2() {
             var input: Substring = "NetMoc 1.2.3" // Typo in 'NetMock'
-            let parser = NetMock.Document.VersionNumber.parser
+            let parser = NetMock.VersionNumber.parser
             #expect(throws: ParseError.expectedToken(.one("NetMock"))) {
                 try parser.complete().run(&input)
             }
@@ -95,11 +96,25 @@ struct ParserTests {
         
         @Test func testInvalidHeader2() {
             let parser = NetMock.Request.parser
-            var input: Substring = "NEW https://shouldBreakOnMethodParse"[...]
+            var input: Substring = "NEW https://shouldBreakOnMethodParse"
             
             #expect(throws: ParseError.contextualError("Method", .expectedToken(.oneOf(NetMock.Method.allCases.map(\.rawValue))))) {
                 try parser.complete().run(&input)
             }
+        }
+        
+        @Test func testCustomURLInitialiser() throws {
+            let parser = NetMock.Request.parser {
+                guard let path = URL(string: $0)?.path()
+                else { return nil }
+                return .init(string: "graphql:/" + path)
+            }
+            
+            var input: Substring = "GET https://madbadger.uat.testing.com/this/is/a/test"
+            let result = try parser.run(&input)
+            
+            #expect(result.method == .GET)
+            #expect(result.url.absoluteString == "graphql://this/is/a/test")
         }
     }
     
@@ -181,6 +196,14 @@ struct ParserTests {
                 #expect(result == 200)
             }
             
+            @Test func testNegativeCode() throws {
+                var input: Substring = "-1008"
+                
+                let result = try NetMock.Identifier.parser.run(&input)
+                
+                #expect(result == -1008)
+            }
+            
             @Test func testLabel() throws {
                 var input: Substring = "success"
                 
@@ -230,11 +253,11 @@ struct ParserTests {
             """
             var substring: Substring = input[...]
             
-            let result = try NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
 
             #expect(result.header.code == 200)
             #expect(result.header.labels.isEmpty == true)
-            #expect(result.body == nil, "Expected body to be nil (\(result.body.map{String(data: $0, encoding: .utf8)} ?? "<nil>"))")
+            #expect(result.body == Data(), "Expected body to be nil (\(String(data: result.body, encoding: .utf8) ?? "<nil>"))")
         }
         
         @Test func testEmptyResponse() throws {
@@ -244,11 +267,11 @@ struct ParserTests {
             """
             var substring: Substring = input[...]
             
-            let result = try NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
             #expect(result.header.code == 204)
             #expect(result.header.labels == ["noContent"])
-            #expect(result.body == nil)
+            #expect(result.body == Data())
         }
         
         @Test func testStatusCodeAndIdentifiers() throws {
@@ -258,11 +281,11 @@ struct ParserTests {
             """
             var substring: Substring = input[...]
             
-            let result = try NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
             #expect(result.header.code == 404)
             #expect(result.header.labels == ["notFound", "specialCase"])
-            #expect(result.body == nil, "Expected body to be nil (\(result.body.map{String(data: $0, encoding: .utf8)} ?? "<nil>"))")
+            #expect(result.body == Data(), "Expected body to be nil (\(String(data: result.body, encoding: .utf8) ?? "<nil>"))")
         }
         
         @Test func testJsonResponse() throws {
@@ -273,12 +296,12 @@ struct ParserTests {
             """
             var substring: Substring = input[...]
             
-            let result = try NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
             #expect(result.header.code == 200)
             #expect(result.header.labels == ["jsonResponse"])
             #expect(result.body == "{ \"message\": \"Hello, world!\" }".data(using: .utf8),
-                    "Body contained: '\(result.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")'")
+                    "Body contained: '\(String(data: result.body, encoding: .utf8) ?? "<nil>")'")
         }
         
         @Test func testBinaryResponse() throws {
@@ -289,12 +312,12 @@ struct ParserTests {
             """
             var substring: Substring = input[...]
             
-            let result = try NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
             #expect(result.header.code == 200)
             #expect(result.header.labels == ["bin"])
             #expect(result.body == "\u{00}\u{01}\u{02}\u{FF}".data(using: .utf8),
-                    "Body contained: '\(result.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")'")
+                    "Body contained: '\(String(data: result.body, encoding: .utf8) ?? "<nil>")'")
         }
         
         @Test func testBodyWithMultipleLines() throws {
@@ -307,7 +330,7 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
             #expect(result.header.code == 200)
             #expect(result.header.labels == ["multiline"])
@@ -317,7 +340,7 @@ struct ParserTests {
                   "name": "Test"
                 }
                 """.data(using: .utf8)
-            #expect(result.body == expected, "Got: \(result.body.flatMap { String(data: $0, encoding: .utf8) } ?? "<nil>")")
+            #expect(result.body == expected, "Got: \(String(data: result.body, encoding: .utf8) ?? "<nil>")")
         }
         
         @Test func testResponseWithoutBodyOrLabels() throws {
@@ -326,11 +349,11 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
-            #expect(result?.header.code == 500)
-            #expect(result?.header.labels.isEmpty == true)
-            #expect(result?.body == nil)
+            #expect(result.header.code == 500)
+            #expect(result.header.labels.isEmpty == true)
+            #expect(result.body == Data())
         }
         
         @Test func testResponseWithLabelButNoBody() throws {
@@ -339,11 +362,11 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
-            #expect(result?.header.code == 301)
-            #expect(result?.header.labels == ["redirect"])
-            #expect(result?.body == nil)
+            #expect(result.header.code == 301)
+            #expect(result.header.labels == ["redirect"])
+            #expect(result.body == Data())
         }
         
         @Test func testResponseWithTerminatorButNoNewline() throws {
@@ -352,11 +375,11 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
-            #expect(result?.header.code == 200)
-            #expect(result?.header.labels == ["simple"])
-            #expect(result?.body == nil)
+            #expect(result.header.code == 200)
+            #expect(result.header.labels == ["simple"])
+            #expect(result.body == Data())
         }
         
         @Test func testResponseBodyContainingTerminator() throws {
@@ -369,11 +392,10 @@ struct ParserTests {
                 ---
                 """
             var substring: Substring = input[...]
-            let result = try? NetMock.Document.Response.parser.complete().run(&substring)
+            let result = try NetMock.Response.parser.complete().run(&substring)
             
-            #expect(result?.header.code == 200)
-            #expect(result?.header.labels == ["success"])
-            #expect(result?.body != nil)
+            #expect(result.header.code == 200)
+            #expect(result.header.labels == ["success"])
         }
     }
     
@@ -411,11 +433,11 @@ struct ParserTests {
             
             #expect(result.body[0].header.code == 200)
             #expect(result.body[0].header.labels == ["simple"])
-            #expect(result.body[0].body == nil)
+            #expect(result.body[0].body == Data())
             
             #expect(result.body[1].header.code == 500)
             #expect(result.body[1].header.labels == [])
-            #expect(result.body[1].body == nil)
+            #expect(result.body[1].body == Data())
             
             #expect(result.body[2].header.code == 200)
             #expect(result.body[2].header.labels == ["multiline"])
@@ -428,7 +450,7 @@ struct ParserTests {
                 )
             #expect(result.body[3].header.code == 404)
             #expect(result.body[3].header.labels == ["notFound", "specialCase"])
-            #expect(result.body[3].body == nil)
+            #expect(result.body[3].body == Data())
         }
         
         @Test func testRealWorldFile() async throws {
@@ -530,11 +552,11 @@ struct ParserTests {
             
             #expect(result.body[0].header.code == 200)
             #expect(result.body[0].header.labels == ["simple"])
-            #expect(result.body[0].body == nil)
+            #expect(result.body[0].body == Data())
             
             #expect(result.body[1].header.code == 500)
             #expect(result.body[1].header.labels == [])
-            #expect(result.body[1].body == nil)
+            #expect(result.body[1].body == Data())
             
             #expect(result.body[2].header.code == 200)
             #expect(result.body[2].header.labels == ["multiline"])
@@ -547,7 +569,40 @@ struct ParserTests {
                 )
             #expect(result.body[3].header.code == 404)
             #expect(result.body[3].header.labels == ["notFound", "specialCase"])
-            #expect(result.body[3].body == nil)
+            #expect(result.body[3].body == Data())
+        }
+        
+        @Test func testCustomURLHandler() async throws {
+            let input = """
+                GET https://testsite.test.mock/Notifications 200
+                
+                200 2025-10-01T12:51:05Z
+                {
+                  "data": "test"
+                }
+                """
+            var substring: Substring = input[...]
+            let result = try NetMock.Document.parser {
+                guard let path = URL(string: $0)?.path()
+                else { return nil }
+                return .init(string: "graphql:/" + path)
+            }.complete().run(&substring)
+            
+            #expect(result.version == nil)
+            
+            #expect(result.header.method == .GET)
+            #expect(result.header.url.absoluteString == "graphql://Notifications")
+            
+            #expect(result.body.count == 1)
+            
+            #expect(result.body[0].header.code == 200)
+            #expect(result.body[0].header.labels == ["2025-10-01T12:51:05Z"])
+            #expect(result.body[0].body == """
+                    {
+                      "data": "test"
+                    }
+                    """.data(using: .utf8)
+            )
         }
     }
 }

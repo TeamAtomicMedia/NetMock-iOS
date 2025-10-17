@@ -56,31 +56,32 @@ extension NetMock {
         }
     }
 
-    struct Document : Sendable {
-        struct VersionNumber : Comparable, Sendable {
-            let major: Int
-            let minor: Int
-            let patch: Int?
-            
-            static func < (lhs: Self, rhs: Self) -> Bool {
-                lhs.major == rhs.major
-                    ? lhs.minor == rhs.minor
-                        ? lhs.patch ?? 0 < rhs.patch ?? 0
-                        : lhs.minor < rhs.minor
-                    : lhs.major < rhs.major
-            }
-        }
-    
+    struct VersionNumber : Comparable, Sendable {
+        let major: Int
+        let minor: Int
+        let patch: Int?
         
-        struct Response : Sendable {
-            struct Header : Sendable {
-                let code: Int
-                let labels: [String]
-            }
-            
-            let header: Header
-            let body: Data?
+        static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.major == rhs.major
+            ? lhs.minor == rhs.minor
+            ? lhs.patch ?? 0 < rhs.patch ?? 0
+            : lhs.minor < rhs.minor
+            : lhs.major < rhs.major
         }
+    }
+    
+    
+    struct Response : Sendable {
+        struct Header : Sendable {
+            let code: Int
+            let labels: [String]
+        }
+        
+        let header: Header
+        let body: Data
+    }
+
+    struct Document : Sendable {
         
         let version: VersionNumber?
         let header: Request

@@ -14,18 +14,19 @@ fileprivate extension String {
 
 enum ParseError: Error, CustomStringConvertible, Equatable {
     var description: String {
-        switch (self) {
-        case .expectedCharacter(let char): return "Expected Character '\(char)'"
-        case .expectedToken(let token): return "Expected Token \(token)"
-        case .expectedType(let typeName): return "Expected Type '\(typeName)'"
-        case .expectedWhitespace: return "Expected Whitespace"
-        case .expectedTerminationSequence: return "Expected Termination Sequence"
-        case .expectedNumber: return "Expected Number"
-        case .expectedAlphaNumericString: return "Expected AlphaNumericString"
-        case .expectedCharactersSatisfyingPredicate: return "Expected Characters Satisfying Predicate"
-        case .incompleteParse(let remaining): return "Incomplete Parse - Remaining: \n\(remaining)"
-        case .contextualError(let context, let error): return "- Parsing Error in \(context):\n\(error.description.indent(2))"
-        case .eitherError(let firstError, let secondError): return "Parsing Failed in Either:\n\("1. \(firstError.description)\n2. \(secondError.description)".indent(2))"
+        switch self {
+        case .expectedCharacter(let char): "Expected Character '\(char)'"
+        case .expectedToken(let token): "Expected Token \(token)"
+        case .expectedType(let typeName): "Expected Type '\(typeName)'"
+        case .expectedWhitespace: "Expected Whitespace"
+        case .expectedTerminationSequence: "Expected Termination Sequence"
+        case .expectedNumber: "Expected Number"
+        case .expectedAlphaNumericString: "Expected AlphaNumericString"
+        case .expectedCharactersSatisfyingPredicate: "Expected Characters Satisfying Predicate"
+        case .incompleteParse(let remaining): "Incomplete Parse - Remaining: \n\(remaining)"
+        case .contextualError(let context, let error): "- Parsing Error in \(context):\n\(error.description.indent(2))"
+        case .eitherError(let firstError, let secondError): "Parsing Failed in Either:\n\("1. \(firstError.description)\n2. \(secondError.description)".indent(2))"
+        case .custom(let error): error
         }
     }
     
@@ -54,4 +55,5 @@ enum ParseError: Error, CustomStringConvertible, Equatable {
     case incompleteParse(Substring)
     indirect case contextualError(String, ParseError)
     indirect case eitherError(ParseError, ParseError)
+    case custom(String)
 }

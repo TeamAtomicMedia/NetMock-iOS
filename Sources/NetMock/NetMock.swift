@@ -4,10 +4,6 @@
 import Foundation
 import OSLog
 
-private let netMockSetupLogger = Logger(subsystem: "NetMock", category: "load")
-internal let netMockRequestLogger = Logger(subsystem: "NetMock", category: "request")
-internal let netMockCaptureLogger = Logger(subsystem: "NetMock", category: "capture")
-
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {
     private var definitions: [Request: Definition] = [:]
@@ -20,7 +16,7 @@ public actor NetMock {
     
     private(set) var handleAllRequests = true
     
-    private var urlParser: (String) -> URL? = URL.init(string:)
+    private var urlParser: @Sendable (String) -> URL? = URL.init(string:)
     /// By default, NetMock will attempt to parse URLs in nm files directly to a URL.
     ///
     /// Use this method to intercept the URL parsing to perform a custom mapping.
@@ -29,7 +25,7 @@ public actor NetMock {
     ///
     /// For example, you can use this to convert API paths to a full URL, where the domain varies by app configuration.
     /// - Parameter parser: The URL parser that will become the new initially attempted parser.
-    public func applyCustomURLParsing(_ parser: @escaping (String) -> URL?) {
+    public func applyCustomURLParsing(_ parser: @Sendable @escaping (String) -> URL?) {
         self.urlParser = { [oldValue = self.urlParser] string in
             parser(string) ?? oldValue(string)
         }
@@ -54,7 +50,7 @@ public actor NetMock {
                 let definition = try Definition(fileURL: url, urlParser: urlParser)
                 self.definitions[definition.request] = definition
             } catch {
-                netMockSetupLogger.debug(
+                NetMock.setupLogger.debug(
                     """
                     NetMock: Error reading \(url.lastPathComponent):
                     > \(error)
@@ -137,13 +133,14 @@ public actor NetMock {
         }
     }
     
-    enum Response {
-        case success(response: HTTPURLResponse, body: String)
+    enum URLProtocolResponse {
+        case success(response: HTTPURLResponse, body: Data)
         case urlError(_ code: Int)
     }
+    
     // Used by URLProtocol to generate a response.
     // Logs in DEBUG if an unexpected failure occurs.
-    func mockResponse(for request: URLRequest) -> Response? {
+    func mockResponse(for request: URLRequest) -> URLProtocolResponse? {
         guard
             let method = (request.httpMethod?.uppercased()).flatMap(Method.init),
             let url = request.url
@@ -155,20 +152,20 @@ public actor NetMock {
         else { return nil }
         
         
-        if response.code < 0 {
-            return .urlError(response.code)
+        if response.header.code < 0 {
+            return .urlError(response.header.code)
         }
         
         guard let httpResponse = HTTPURLResponse(
             url: url,
-            statusCode: response.code,
+            statusCode: response.header.code,
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
             netMockRequestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
-                > \(url.absoluteString) \(response.code)
+                > \(url.absoluteString) \(response.header.code)
                 """
             )
             return nil

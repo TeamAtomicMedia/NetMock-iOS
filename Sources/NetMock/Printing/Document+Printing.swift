@@ -18,7 +18,7 @@ extension NetMock.Document: CustomStringConvertible {
     }
 }
 
-extension NetMock.Document.VersionNumber : CustomStringConvertible {
+extension NetMock.VersionNumber : CustomStringConvertible {
     var description: String {
         if let patch = self.patch {
             "NetMock \(self.major).\(self.minor).\(patch)"
@@ -27,7 +27,7 @@ extension NetMock.Document.VersionNumber : CustomStringConvertible {
         }
     }
     
-    static var current: NetMock.Document.VersionNumber {
+    static var current: NetMock.VersionNumber {
         .init(major: 3, minor: 0, patch: 0)
     }
 }
@@ -48,17 +48,15 @@ extension NetMock.Identifier : CustomStringConvertible {
     }
 }
 
-extension NetMock.Document.Response : CustomStringConvertible {
+extension NetMock.Response : CustomStringConvertible {
     var description: String {
-        let formattedBody = body
-            .flatMap { try? JSONSerialization.jsonObject(with: $0) }
-            .flatMap { try? JSONSerialization.data(withJSONObject: $0, options: [.prettyPrinted]) }
-            .flatMap { String(data: $0, encoding: .utf8) } ?? body.flatMap { String(data: $0, encoding: .utf8) }
+        let prettyPrintedJSONData = try? JSONSerialization.data(withJSONObject: JSONSerialization.jsonObject(with: body), options: [.prettyPrinted])
+        let formattedBody = String(data: prettyPrintedJSONData ?? body, encoding: .utf8) ?? ""
         
-        return if let body = formattedBody {
+        return if !formattedBody.isEmpty{
         """
         \(self.header.description)
-        \(body)
+        \(formattedBody)
         ---
         """
         } else {
@@ -70,7 +68,7 @@ extension NetMock.Document.Response : CustomStringConvertible {
     }
 }
 
-extension NetMock.Document.Response.Header : CustomStringConvertible {
+extension NetMock.Response.Header : CustomStringConvertible {
     var description: String {
         "\(self.code) \(self.labels.joined(separator: " "))"
     }

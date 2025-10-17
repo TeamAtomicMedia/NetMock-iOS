@@ -22,15 +22,15 @@ extension NetMock {
         struct CapturedResponse : Hashable {
             let statusCode: Int
             let datetime: Date
-            let body: Data?
+            let body: Data
             
-            public init(statusCode: Int, body: Data?) {
+            public init(statusCode: Int, body: Data) {
                 self.statusCode = statusCode
                 self.datetime = Date()
                 self.body = body
             }
             
-            var response: NetMock.Document.Response {
+            var response: NetMock.Response {
                 .init(header: .init(code: statusCode, labels: [datetime.ISO8601Format()]), body: body)
             }
         }
@@ -38,7 +38,7 @@ extension NetMock {
         let request: Request
         let response: CapturedResponse
         
-        public init(method: Method, url: URL, statusCode: Int, body: Data?) {
+        public init(method: Method, url: URL, statusCode: Int, body: Data) {
             self.request = .init(method: method, url: url)
             self.response = .init(statusCode: statusCode, body: body)
         }
