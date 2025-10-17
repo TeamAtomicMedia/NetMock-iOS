@@ -27,7 +27,7 @@ extension NetMock.Document.VersionNumber : Parsable {
 
 extension NetMock.Identifier : Parsable {
     static var parser: Parser<NetMock.Identifier> {
-        .init{ input in
+        .init { input in
             let liveParser: Parser<String> = .token("#Live")
             let codeParser: Parser<Int> = .number()
             let labelParser: Parser<String> = .predicate { !$0.isWhitespace }
