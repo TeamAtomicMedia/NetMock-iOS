@@ -43,7 +43,6 @@ extension NetMock {
                 throw LoadError.incompleteParse
             }
             
-            //TODO: Add Validation
             try document.validate()
             
             self.request = document.header
