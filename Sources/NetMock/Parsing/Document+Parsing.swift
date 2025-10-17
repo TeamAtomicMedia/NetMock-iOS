@@ -58,7 +58,7 @@ extension NetMock.Request : Parsable {
             let urlString = try urlStringParser.context("URLString").run(&input)
             
             guard let url = urlHandler(urlString)
-            else { throw ParseError.custom("Failed to convert URLString '\(urlString)' to URL") }
+            else { throw NetMock.Definition.LoadError.invalidURL }
             
             return .init(method: method, url: url)
         }

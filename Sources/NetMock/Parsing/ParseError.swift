@@ -26,7 +26,6 @@ enum ParseError: Error, CustomStringConvertible, Equatable {
         case .incompleteParse(let remaining): "Incomplete Parse - Remaining: \n\(remaining)"
         case .contextualError(let context, let error): "- Parsing Error in \(context):\n\(error.description.indent(2))"
         case .eitherError(let firstError, let secondError): "Parsing Failed in Either:\n\("1. \(firstError.description)\n2. \(secondError.description)".indent(2))"
-        case .custom(let error): error
         }
     }
     
@@ -55,5 +54,4 @@ enum ParseError: Error, CustomStringConvertible, Equatable {
     case incompleteParse(Substring)
     indirect case contextualError(String, ParseError)
     indirect case eitherError(ParseError, ParseError)
-    case custom(String)
 }

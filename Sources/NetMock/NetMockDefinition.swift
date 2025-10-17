@@ -13,6 +13,7 @@ extension NetMock {
         enum LoadError: Error {
             case invalidFileFormat
             case incompleteParse
+            case invalidURL
         }
         
         /// The request which will use this local override.
