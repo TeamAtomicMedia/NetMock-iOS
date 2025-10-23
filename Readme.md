@@ -339,3 +339,15 @@ Button("Save Responses") {
 ```
 
 In this example, the `modifyContents` closure replace occurrences of the UAT domain with a more generalised URL, allowing the persisted files to remain environment-agnostic.
+
+### Resetting
+
+Use `DocumentStore.reset` method to erase captures responses from `DocumentStore`. This action will not affect captures responses that have been persisted to the disk. This can be used a convenient way to reset the app's captured responses without having to restart the app.
+
+```swift
+Button("Erase Responses") {
+    Task {
+        await NetMock.DocumentStore.shared.reset() 
+    }
+}
+```
