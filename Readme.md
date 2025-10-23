@@ -342,7 +342,7 @@ In this example, the `modifyContents` closure replace occurrences of the UAT dom
 
 ### Resetting
 
-Use `DocumentStore.reset` method to erase captures responses from `DocumentStore`. This action will not affect captures responses that have been persisted to the disk. This can be used a convenient way to reset the app's captured responses without having to restart the app.
+Use `DocumentStore.reset` method to erase captured responses from `DocumentStore`. This action will not affect captured responses that have been persisted to the disk. This can be used a convenient way to reset the app's captured responses without having to restart the app.
 
 ```swift
 Button("Erase Responses") {
