@@ -119,5 +119,9 @@ extension NetMock {
                 NetMock.captureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
             }
         }
+        
+        public func reset() {
+            self.documents.removeAll()
+        }
     }
 }
