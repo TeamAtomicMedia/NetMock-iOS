@@ -119,5 +119,14 @@ extension NetMock {
                 NetMock.captureLogger.debug("\(writeCount)/\(documentCount) Documents successfully written")
             }
         }
+        
+        
+        /// Reset contents of DocumentStore to capture fresh responses
+        ///
+        /// Note that this is not necessary to call at the start of an apps lifetime,
+        /// as the DocumentStore does not persist between sessions.
+        public func reset() {
+            self.documents.removeAll()
+        }
     }
 }
