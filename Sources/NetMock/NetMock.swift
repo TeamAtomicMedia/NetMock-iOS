@@ -113,6 +113,17 @@ public actor NetMock {
         if override.responses.isEmpty {
             definitions[request] = nil
         } else {
+            guard definitions[request] != nil else {
+                NetMock.setupLogger.warning(
+                    """
+                    NetMock: Response was not found for override:
+                    > \(request.method.rawValue):\(request.url)
+                    
+                    Verify that a corresponding .nm file exists.
+                    """
+                )
+                return
+            }
             definitions[request]?.override(override.responses)
         }
     }

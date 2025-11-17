@@ -72,6 +72,19 @@ extension NetMock {
         /// - Parameter responseSequence: Values must match a defined response or they will be ignored.
         mutating func override(_ responseSequence: [Identifier]) {
             assert(!responseSequence.dropLast().contains(.live), "#Live is only supported as the final entry in a sequence")
+            let missingResponses = responseSequence
+                .compactMap { if case .mock(let id) = $0 {return id} else {return nil} }
+                .filter { self.availableResponses[$0] == nil }
+            if !missingResponses.isEmpty {
+                NetMock.setupLogger.warning(
+                    """
+                    NetMock: Response definition(s) not found for the following override responses:
+                    \(missingResponses.map { "> \(Identifier.mock($0).description)" }.joined(separator: "\n"))
+                    
+                    Please verify that your response identifiers appear in the .nm file. 
+                    """
+                )
+            }
             self.responseSequence = responseSequence
         }
         
