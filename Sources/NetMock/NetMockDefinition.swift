@@ -79,7 +79,7 @@ extension NetMock {
                 NetMock.setupLogger.warning(
                     """
                     NetMock: Response definition(s) not found for the following override responses:
-                    \(missingResponses.map { "> \(Identifier.mock($0).description)\n" })
+                    \(missingResponses.map { "> \(Identifier.mock($0).description)" }.joined(separator: "\n"))
                     
                     Please verify that your response identifiers appear in the .nm file. 
                     """
