@@ -118,6 +118,8 @@ public actor NetMock {
                     """
                     NetMock: Response was not found for override:
                     > \(request.method.rawValue):\(request.url)
+                    
+                    Verify that a corresponding .nm file exists.
                     """
                 )
                 return
