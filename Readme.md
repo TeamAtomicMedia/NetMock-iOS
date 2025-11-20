@@ -1,7 +1,5 @@
 # NetMock
 
-See also: https://atomicmedia.atlassian.net/wiki/spaces/DEV/pages/1743618051/UI+Testing+Strategy+Overview
-
 ## Setup
 
 NetMock is a tool to swap in mock responses for API calls, for use in offline app configurations and unit/UI tests.
