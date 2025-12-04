@@ -276,7 +276,7 @@ NetMockCaptureURLProtocol.applyGlobally()
 
 To capture network responses in a custom network stack, add an interceptor layer.
 
-As this implementation is dependent on the user's networking stack, it is up to the caller to implement their own interceptor for their networking pipeline.
+As this implementation is dependent on the user's networking stack, it is up to the caller to implement their own layer for their networking pipeline.
 
 For example, to capture ApolloGraphQL responses, an `ApolloInterceptor` class can be built to pass network responses to the `DocumentStore` via `DocumentStore.add`. 
 
