@@ -266,9 +266,16 @@ The `NetMock.DocumentStore` actor and its related methods enable the automatic c
 
 ### Response Capturing
 
-Capture live network responses by adding an interceptor layer to your networking stack.
+Capture live network responses by adding an interceptor layer to your networking stack or applying NetMockCaptureURLProtocol's `applyGlobally` function.
 
-To capture network responses, add an interceptor layer to your networking stack. 
+```swift
+#if CAPTURE
+NetMockCaptureURLProtocol.applyGlobally()
+#endif
+``` 
+
+To capture network responses in a custom network stack, add an interceptor layer.
+
 As this implementation is dependent on the user's networking stack, it is up to the caller to implement their own interceptor for their networking pipeline.
 
 For example, to capture ApolloGraphQL responses, an `ApolloInterceptor` class can be built to pass network responses to the `DocumentStore` via `DocumentStore.add`. 
