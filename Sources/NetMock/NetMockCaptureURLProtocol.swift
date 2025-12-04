@@ -9,6 +9,9 @@ import Foundation
 
 /// Apply this to the URLSessionConfiguration to send URL responses to NetMock Capture
 public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
+    @MainActor
+    static var session = URLSession(configuration: .default)
+    
     public override class func canInit(with request: URLRequest) -> Bool {
         guard let scheme = request.url?.scheme else { return false }
         return scheme == "https" || scheme == "http"
@@ -23,9 +26,8 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
         let url = request.url
         
         Task {
-            let session = URLSession(configuration: .default)
             do {
-                let (data, urlResponse) = try await session.data(for: request)
+                let (data, urlResponse) = try await NetMockCaptureURLProtocol.session.data(for: request)
                 
                 client?.urlProtocol(self, didReceive: urlResponse, cacheStoragePolicy: .notAllowed)
                 client?.urlProtocol(self, didLoad: data)
