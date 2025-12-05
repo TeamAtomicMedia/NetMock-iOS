@@ -42,6 +42,8 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
         }
     }
     
+    override public func stopLoading() {}
+    
     public static func applyGlobally() {
         // WebViews and system
         URLProtocol.registerClass(Self.self)
