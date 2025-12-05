@@ -57,6 +57,7 @@ extension NetMock {
         public func add(_ entry: DocumentStoreEntry) {
             let request = entry.request
             let response = entry.response
+            print("Capturing response for \(request.url.absoluteString)")
             documents[request, default: []].append(response)
         }
         
