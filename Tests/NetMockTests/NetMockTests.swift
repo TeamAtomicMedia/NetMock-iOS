@@ -128,6 +128,29 @@ struct Tests {
         try await assertParseFailure(try await network.exampleGETFailure()) // Second call should return the same response
     }
     
+    @Test func dataCaptureIsReversibleConversion() async throws {
+        let documentStore = NetMock.DocumentStore.shared
+        let fileManager = FileManager.default
+        let data = try await network.exampleGETRawData()
+        let response = try JSONDecoder().decode(ExampleGETResponse.self, from: data)
+        
+        await documentStore.add(.init(method: .GET, url: NetworkAPI.exampleAPI, statusCode: 200, body: data))
+        let caches = try fileManager.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        await documentStore.save(toDirectory: caches, customFilename: { _ in "Test" }, customSubpath: { _ in [] })
+        
+        var fileContents = try String(contentsOf: caches.appendingPathComponent("Test.nm", isDirectory: false), encoding: .utf8)
+        let result = try NetMock.Document.parser.complete().run(&fileContents)
+        #expect(result.header.method == .GET)
+        #expect(result.header.url == NetworkAPI.exampleAPI)
+        let capturedResponse = try #require(result.body.first)
+        #expect(capturedResponse.header.code == 200)
+        
+        let capturedResponseBody = try JSONDecoder().decode(ExampleGETResponse.self, from: capturedResponse.body)
+        
+        #expect(capturedResponseBody.id == response.id)
+        #expect(capturedResponseBody.name == response.name)
+    }
+    
     func assertParseFailure(_ response: @autoclosure () async throws -> Any, sourceLocation: SourceLocation = #_sourceLocation) async rethrows {
         do {
             let _ = try await response()
