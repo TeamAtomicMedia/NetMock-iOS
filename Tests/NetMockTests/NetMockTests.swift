@@ -129,26 +129,62 @@ struct Tests {
     }
     
     @Test func dataCaptureIsReversibleConversion() async throws {
-        let documentStore = NetMock.DocumentStore.shared
-        let fileManager = FileManager.default
         let data = try await network.exampleGETRawData()
         let response = try JSONDecoder().decode(ExampleGETResponse.self, from: data)
         
-        await documentStore.add(.init(method: .GET, url: NetworkAPI.exampleAPI, statusCode: 200, body: data))
-        let caches = try fileManager.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        await documentStore.save(toDirectory: caches, customFilename: { _ in "Test" }, customSubpath: { _ in [] })
+        try await capture(responses: [.init(method: .GET, url: NetworkAPI.exampleAPI, statusCode: 200, body: data)])
         
-        var fileContents = try String(contentsOf: caches.appendingPathComponent("Test.nm", isDirectory: false), encoding: .utf8)
-        let result = try NetMock.Document.parser.complete().run(&fileContents)
+        let result = try loadCapturedResponses()
         #expect(result.header.method == .GET)
         #expect(result.header.url == NetworkAPI.exampleAPI)
+        #expect(result.body.count == 1)
+        
         let capturedResponse = try #require(result.body.first)
         #expect(capturedResponse.header.code == 200)
-        
         let capturedResponseBody = try JSONDecoder().decode(ExampleGETResponse.self, from: capturedResponse.body)
-        
         #expect(capturedResponseBody.id == response.id)
         #expect(capturedResponseBody.name == response.name)
+    }
+    
+    @Test func dataCaptureCapturesMultipleResponses() async throws {
+        let data = try await network.exampleGETRawData()
+        let response = try JSONDecoder().decode(ExampleGETResponse.self, from: data)
+        
+        try await capture(responses: [
+            .init(method: .GET, url: NetworkAPI.exampleAPI, statusCode: 200, body: data),
+            .init(method: .GET, url: NetworkAPI.exampleAPI, statusCode: 400, body: data),
+        ])
+        
+        let result = try loadCapturedResponses()
+        #expect(result.header.method == .GET)
+        #expect(result.header.url == NetworkAPI.exampleAPI)
+        #expect(result.body.count == 2)
+        
+        let capturedResponse = try #require(result.body.first)
+        #expect(capturedResponse.header.code == 200)
+        let capturedResponseBody = try JSONDecoder().decode(ExampleGETResponse.self, from: capturedResponse.body)
+        #expect(capturedResponseBody.id == response.id)
+        #expect(capturedResponseBody.name == response.name)
+        
+        let capturedResponse2 = try #require(result.body.last)
+        #expect(capturedResponse2.header.code == 400)
+        let capturedResponseBody2 = try JSONDecoder().decode(ExampleGETResponse.self, from: capturedResponse.body)
+        #expect(capturedResponseBody2.id == response.id)
+        #expect(capturedResponseBody2.name == response.name)
+    }
+    
+    func capture(responses: [NetMock.DocumentStoreEntry]) async throws {
+        let caches = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let documentStore = NetMock.DocumentStore.shared
+        for response in responses {
+            await documentStore.add(response)
+        }
+        await documentStore.save(toDirectory: caches, customFilename: { _ in "Test" }, customSubpath: { _ in [] })
+    }
+    func loadCapturedResponses() throws -> NetMock.Document {
+        let caches = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        var fileContents = try String(contentsOf: caches.appendingPathComponent("Test.nm", isDirectory: false), encoding: .utf8)
+        return try NetMock.Document.parser.complete().run(&fileContents)
     }
     
     func assertParseFailure(_ response: @autoclosure () async throws -> Any, sourceLocation: SourceLocation = #_sourceLocation) async rethrows {
