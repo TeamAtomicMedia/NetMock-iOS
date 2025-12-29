@@ -63,21 +63,21 @@ extension NetMock {
         
         /// Persist captured responses in DocumentStore to filesystem as .nm files
         /// - Parameters:
-        ///   - file: The base directory where files will be written. Defaults to the app’s document directory.
+        ///   - directory: The base directory where files will be written. Defaults to the app’s document directory.
         ///   - modifyContents: A closure for transforming the saved file contents (e.g. redacting or generalising domains). Defaults to a closure with no effect.
-        ///   - customFilename: A closure for customising the file’s name. Defaults to the last component of the urlString (if a valid url) otherwise the full urlString.
-        ///   - customDirectory: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
+        ///   - customFilename: A closure for customising the file’s name, not including the file extension. Defaults to the last component of the urlString (if a valid url) otherwise the full urlString.
+        ///   - customSubpath: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
         public func save(
-            toFile file: URL? = nil,
+            toDirectory directory: URL? = nil,
             modifyContents: (String) -> String = { $0 },
             customFilename: (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
-            customDirectory: (Request) -> [String] = { $0.url.pathComponents.dropLast() + [$0.method.rawValue] }
+            customSubpath: (Request) -> [String] = { $0.url.pathComponents.dropLast() + [$0.method.rawValue] }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0
             
-            let documentsDirectory = if let file {
-                file
+            let documentsDirectory = if let directory {
+                directory
             } else {
                 FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
             }
@@ -89,7 +89,7 @@ extension NetMock {
                 guard let data = modifiedFileContents.data(using: .utf8)
                 else { continue }
 
-                let directory: URL = customDirectory(document.key)
+                let directory: URL = customSubpath(document.key)
                     .reduce(documentsDirectory) { $0.appendingPathComponent($1) }
                 
                 let filename: String = customFilename(document.key)
