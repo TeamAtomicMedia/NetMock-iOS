@@ -15,7 +15,7 @@ private extension NetMock.Document {
 
 extension NetMock {
     /// A struct containing the information associated to a given network request and response
-    public struct DocumentStoreEntry {
+    public struct DocumentStoreEntry: Sendable {
         /// A struct containing information associated with a single captured response
         ///
         /// This struct is used internally inside DocumentStore to store captured responses.
