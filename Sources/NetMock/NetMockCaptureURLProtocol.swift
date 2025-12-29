@@ -92,7 +92,7 @@ extension URLSession {
         // The implementation to be used post-swizzle.
         let session = URLSession.sharedBypassingNetMockCapture // Now has .shared's implementation. Pre-swizzle, this will infinitely recurse and stack overflow.
         if session.configuration.protocolClasses?.contains(where: { $0 == NetMockCaptureURLProtocol.self }) == false {
-            session.configuration.protocolClasses = [NetMockCaptureURLProtocol.self] + (session.configuration.protocolClasses ?? [])
+            return URLSession(configuration: .default)
         }
         return session
     }
