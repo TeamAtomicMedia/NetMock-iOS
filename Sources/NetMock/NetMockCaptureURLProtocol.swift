@@ -44,26 +44,25 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     
     override public func stopLoading() {}
     
+    @MainActor
     public static func applyGlobally() {
-        Task { @MainActor in
-            _ = NetMockCaptureURLProtocol.session
-            
-            // WebViews and system
-            URLProtocol.registerClass(Self.self)
-            
-            // Apply to all URLSessions created in project
-            let configDefaultOriginal = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.defaultBypassingNetMockCapture))!
-            let configDefaultReplacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.`default`))!
-            method_exchangeImplementations(configDefaultOriginal, configDefaultReplacement)
-            
-            let configEphemeralOriginal = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.ephemeralBypassingNetMockCapture))!
-            let configEphemeralReplacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.ephemeral))!
-            method_exchangeImplementations(configEphemeralOriginal, configEphemeralReplacement)
-            
-            let sessionSharedOriginal = class_getClassMethod(URLSession.self, #selector(getter: URLSession.sharedBypassingNetMockCapture))!
-            let sessionSharedReplacement = class_getClassMethod(URLSession.self, #selector(getter: URLSession.shared))!
-            method_exchangeImplementations(sessionSharedOriginal, sessionSharedReplacement)
-        }
+        _ = NetMockCaptureURLProtocol.session
+        
+        // WebViews and system
+        URLProtocol.registerClass(Self.self)
+        
+        // Apply to all URLSessions created in project
+        let configDefaultOriginal = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.defaultBypassingNetMockCapture))!
+        let configDefaultReplacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.`default`))!
+        method_exchangeImplementations(configDefaultOriginal, configDefaultReplacement)
+        
+        let configEphemeralOriginal = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.ephemeralBypassingNetMockCapture))!
+        let configEphemeralReplacement = class_getClassMethod(URLSessionConfiguration.self, #selector(getter: URLSessionConfiguration.ephemeral))!
+        method_exchangeImplementations(configEphemeralOriginal, configEphemeralReplacement)
+        
+        let sessionSharedOriginal = class_getClassMethod(URLSession.self, #selector(getter: URLSession.sharedBypassingNetMockCapture))!
+        let sessionSharedReplacement = class_getClassMethod(URLSession.self, #selector(getter: URLSession.shared))!
+        method_exchangeImplementations(sessionSharedOriginal, sessionSharedReplacement)
     }
 }
 
