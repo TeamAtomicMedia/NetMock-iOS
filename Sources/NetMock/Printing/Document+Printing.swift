@@ -51,7 +51,7 @@ extension NetMock.Identifier : CustomStringConvertible {
 extension NetMock.Response : CustomStringConvertible {
     var description: String {
         let prettyPrintedJSONData = try? JSONSerialization.data(withJSONObject: JSONSerialization.jsonObject(with: body), options: [.prettyPrinted])
-        let formattedBody = String(data: prettyPrintedJSONData ?? body, encoding: .utf8) ?? ""
+        let formattedBody = String(data: prettyPrintedJSONData ?? body, encoding: .utf8) ?? body.base64EncodedString()
         
         return if !formattedBody.isEmpty{
         """

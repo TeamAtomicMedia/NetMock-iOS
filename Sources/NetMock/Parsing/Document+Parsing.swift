@@ -79,7 +79,7 @@ extension NetMock.Response : Parsable {
             let bodyParser: Parser<Data> = Parser<String>
                 .until(terminator: .token("\n---"), allowEOF: true, consumeTerminator: true)
                 .map { $0.trimmingCharacters(in: .newlines) }
-                .map { $0.data(using: .utf8) ?? Data() }
+                .map { Data(base64Encoded: $0) ?? $0.data(using: .utf8) ?? Data() }
                 .context("Body")
             
             let header: NetMock.Response.Header = try headerParser.run(&input)
