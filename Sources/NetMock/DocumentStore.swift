@@ -71,7 +71,7 @@ extension NetMock {
             toDirectory directory: URL? = nil,
             modifyContents: (String) -> String = { $0 },
             customFilename: (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
-            customSubpath: (Request) -> [String] = { $0.url.pathComponents.dropLast() + [$0.method.rawValue] }
+            customSubpath: (Request) -> [String] = { [$0.method.rawValue, $0.url.host].compactMap(\.self) + $0.url.pathComponents.dropLast() }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0
