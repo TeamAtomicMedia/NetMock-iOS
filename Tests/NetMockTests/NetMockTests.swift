@@ -10,6 +10,7 @@ struct Tests {
     init() async {
         await NetMock.shared.initialise(bundle: .module)
         await NetMock.shared.allowUnmockedRequests(false)
+        await NetMock.DocumentStore.shared.reset()
     }
     
     @Test func exampleGetIsLoaded() async throws {
