@@ -79,7 +79,7 @@ extension NetMock {
         
         /// Persist captured responses in DocumentStore to filesystem as .nm files
         /// - Parameters:
-        ///   - directory: The base directory where files will be written. Defaults to the app’s document directory.
+        ///   - toDirectory: The base directory where files will be written. Defaults to the app’s document directory.
         ///   - modifyContents: A closure for transforming the saved file contents (e.g. redacting or generalising domains). Defaults to a closure with no effect.
         ///   - customFilename: A closure for customising the file’s name, not including the file extension. Defaults to the last component of the urlString (if a valid url) otherwise the full urlString.
         ///   - customSubpath: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
