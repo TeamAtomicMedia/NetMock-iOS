@@ -325,10 +325,10 @@ Multiple responses to the same request will be combined into a single file, labe
 Use `DocumentStore.save` method to persist captured responses to the disk. By default, the method will save to the app's document directory. 
 
 The save function also features parameters for customising file locations and contents which can be used to generalise domains and organise the resulting files:
-- `toFile`: The base directory where files will be written. Defaults to the app’s document directory.
-- `modifyContents`: A closure for transforming the saved file contents (e.g. redacting or generalising domains).
-- `customFilename`: A closure for customising the file’s name.
-- `customDirectory`: A closure for customising the directory structure for each response.
+- `toDirectory`: The base directory where files will be written. Defaults to the app’s document directory.
+- `modifyContents`: A closure for transforming the saved file contents (e.g. redacting or generalising domains). Defaults to a closure with no effect.
+- `customFilename`: A closure for customising the file’s name, not including the file extension. Defaults to the last component of the urlString (if a valid url) otherwise the full urlString.
+- `customSubpath`: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
 
 ```swift
 Button("Save Responses") {
