@@ -70,9 +70,9 @@ extension NetMock {
         @available(*, deprecated, renamed: "save(toDirectory:modifyContents:customFilename:customSubpath:)", message: "Please use updated function signature save(toDirectory:modifyContents:customFilename:customSubpath:)")
         public func save(
             toFile file: URL? = nil,
-            modifyContents: (String) -> String = { $0 },
-            customFilename: (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
-            customDirectory: (Request) -> [String] = { [$0.method.rawValue, $0.url.host].compactMap(\.self) + $0.url.pathComponents.dropLast() }
+            modifyContents: @Sendable (String) -> String = { $0 },
+            customFilename: @Sendable (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
+            customDirectory: @Sendable (Request) -> [String] = { [$0.method.rawValue, $0.url.host].compactMap(\.self) + $0.url.pathComponents.dropLast() }
         ) {
             save(toDirectory: file, modifyContents: modifyContents, customFilename: customFilename, customSubpath: customDirectory)
         }
@@ -85,9 +85,9 @@ extension NetMock {
         ///   - customSubpath: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.
         public func save(
             toDirectory directory: URL? = nil,
-            modifyContents: (String) -> String = { $0 },
-            customFilename: (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
-            customSubpath: (Request) -> [String] = { [$0.method.rawValue, $0.url.host].compactMap(\.self) + $0.url.pathComponents.dropLast() }
+            modifyContents: @Sendable (String) -> String = { $0 },
+            customFilename: @Sendable (Request) -> String = { $0.url.pathComponents.last ?? $0.url.absoluteString },
+            customSubpath: @Sendable (Request) -> [String] = { [$0.method.rawValue, $0.url.host].compactMap(\.self) + $0.url.pathComponents.dropLast() }
         ) {
             let documentCount = self.documents.count
             var writeCount: Int = 0
