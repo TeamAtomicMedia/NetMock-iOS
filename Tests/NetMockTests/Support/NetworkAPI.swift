@@ -11,8 +11,12 @@ class NetworkAPI {
     
     static let exampleAPI = URL(string: "https://api.example.com/example")!
     
-    func exampleGET() async throws -> ExampleGETResponse {
+    func exampleGETRawData() async throws -> Data {
         let (data, _) = try await session.data(from: Self.exampleAPI)
+        return data
+    }
+    func exampleGET() async throws -> ExampleGETResponse {
+        let data = try await exampleGETRawData()
         return try JSONDecoder().decode(ExampleGETResponse.self, from: data)
     }
     

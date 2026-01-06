@@ -33,6 +33,7 @@ To apply NetMock throughout the app, including dependencies which don't make the
 NetMockURLProtocol.applyGlobally()
 ```
 
+To mock out GraphQL responses, which tend to go through a single endpoint with the actual request in the body, you may choose to have your testing network stack use a custom URL specifically for NetMock lookup.
 
 ## NetMock files
 
@@ -266,12 +267,17 @@ The `NetMock.DocumentStore` actor and its related methods enable the automatic c
 
 ### Response Capturing
 
-Capture live network responses by adding an interceptor layer to your networking stack.
+Live network responses can be captured automatically by applying NetMockCaptureURLProtocol's `applyGlobally` function.
 
-To capture network responses, add an interceptor layer to your networking stack. 
-As this implementation is dependent on the user's networking stack, it is up to the caller to implement their own interceptor for their networking pipeline.
+```swift
+#if CAPTURE
+NetMockCaptureURLProtocol.applyGlobally()
+#endif
+``` 
 
-For example, to capture ApolloGraphQL responses, an `ApolloInterceptor` class can be built to pass network responses to the `DocumentStore` via `DocumentStore.add`. 
+This will capture all network requests performed via URLSession, directly or indirectly.
+
+Other uses-cases can be built to pass network responses to the `DocumentStore` via `DocumentStore.add`.
 
 ```swift
 class ApolloNetMockInterceptor: ApolloInterceptor {

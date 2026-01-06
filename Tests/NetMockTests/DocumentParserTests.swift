@@ -105,7 +105,7 @@ struct ParserTests {
         
         @Test func testCustomURLInitialiser() throws {
             let parser = NetMock.Request.parser {
-                guard let path = URL(string: $0)?.path()
+                guard let path = URL(string: $0)?.path
                 else { return nil }
                 return .init(string: "graphql:/" + path)
             }
@@ -583,7 +583,7 @@ struct ParserTests {
                 """
             var substring: Substring = input[...]
             let result = try NetMock.Document.parser {
-                guard let path = URL(string: $0)?.path()
+                guard let path = URL(string: $0)?.path
                 else { return nil }
                 return .init(string: "graphql:/" + path)
             }.complete().run(&substring)
