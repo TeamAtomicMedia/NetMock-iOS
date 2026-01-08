@@ -4,9 +4,12 @@
 //  Created by Christopher Wainwright on 26/09/2025.
 //
 
-import Testing
-@testable import NetMock
 import Foundation
+import Testing
+
+@testable import NetMock
+import Parser
+
 
 @Suite
 struct ParserTests {
