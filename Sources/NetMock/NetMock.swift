@@ -8,7 +8,7 @@ import NetMockCore
 
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {
-    private var definitions: [NetMockCore.Request: Definition] = [:]
+    private var definitions: [Request: Definition] = [:]
     
     /// The NetMock instance used by NetMockURLProtocol to keep tracks of mock responses to substitute. Must be initialised before use.
     public static let shared = NetMock()
@@ -49,7 +49,7 @@ public actor NetMock {
         definitions.reserveCapacity(urls.count)
         for url in urls {
             do {
-                let document = try NetMockCore.Document(fileURL: url, urlParser: urlParser)
+                let document = try Document(fileURL: url, urlParser: urlParser)
                 let definition = Definition(document: document)
                 self.definitions[definition.request] = definition
             } catch {
@@ -66,13 +66,13 @@ public actor NetMock {
     /// Represents a NetMock override which can change the responses returned to an alternative defined in the nm file.
     public struct Override: Codable {
         /// The HTTP request method to observe. Defaults to "GET".
-        public var method: NetMockCore.Method
+        public var method: Method
         /// The URL whose response will be overridden.
         public var url: URL
         /// A list of response names or codes from the nm file to use as the response.
-        public var responses: [NetMockCore.Identifier]
+        public var responses: [Identifier]
         
-        public init(method: NetMockCore.Method = .GET, url: URL, responses: [NetMockCore.Identifier]) {
+        public init(method: Method = .GET, url: URL, responses: [Identifier]) {
             self.method = method
             self.url = url
             self.responses = responses
@@ -85,7 +85,7 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - response: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: NetMockCore.Method = .GET, _ url: URL, response: NetMockCore.Identifier) {
+    public func override(_ method: Method = .GET, _ url: URL, response: Identifier) {
         override(method, url, responses: [response])
     }
     
@@ -95,7 +95,7 @@ public actor NetMock {
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
     ///   - responses: A list of response names or codes from the nm file to use as the response.
-    public func override(_ method: NetMockCore.Method = .GET, _ url: URL, responses: [NetMockCore.Identifier]) {
+    public func override(_ method: Method = .GET, _ url: URL, responses: [Identifier]) {
         applyOverride(Override(method: method, url: url, responses: responses))
     }
     
@@ -112,7 +112,7 @@ public actor NetMock {
     ///
     /// - Parameter override: The override to apply.
     public func applyOverride(_ override: Override) {
-        let request = NetMockCore.Request(method: override.method, url: override.url)
+        let request = Request(method: override.method, url: override.url)
         if override.responses.isEmpty {
             definitions[request] = nil
         } else {
@@ -135,10 +135,10 @@ public actor NetMock {
     // If a nm file hasn't been provided or couldn't be read, this should return false.
     func shouldHandle(_ request: URLRequest) -> Bool {
         guard
-            let method = (request.httpMethod?.uppercased()).flatMap(NetMockCore.Method.init),
+            let method = (request.httpMethod?.uppercased()).flatMap(Method.init),
             let url = request.url
         else { return false }
-        let netMockRequest = NetMockCore.Request(method: method, url: url)
+        let netMockRequest = Request(method: method, url: url)
         if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
             let isLive = definition.responseSequence.first == .live // If we see #Live in a sequence, don't intercept
             return !isLive
@@ -156,11 +156,11 @@ public actor NetMock {
     // Logs in DEBUG if an unexpected failure occurs.
     func mockResponse(for request: URLRequest) -> URLProtocolResponse? {
         guard
-            let method = (request.httpMethod?.uppercased()).flatMap(NetMockCore.Method.init),
+            let method = (request.httpMethod?.uppercased()).flatMap(Method.init),
             let url = request.url
         else { return nil }
         
-        let netMockRequest = NetMockCore.Request(method: method, url: url)
+        let netMockRequest = Request(method: method, url: url)
         
         guard let response = definitions[netMockRequest]?.nextResponse()
         else { return nil }

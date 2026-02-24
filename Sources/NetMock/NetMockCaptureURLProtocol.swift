@@ -24,7 +24,7 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     
     override public func startLoading() {
         let rawMethod = request.httpMethod ?? "GET"
-        let method = NetMockCore.Method(rawValue: rawMethod) ?? .GET
+        let method = Method(rawValue: rawMethod) ?? .GET
         let url = request.url
         
         Task {
