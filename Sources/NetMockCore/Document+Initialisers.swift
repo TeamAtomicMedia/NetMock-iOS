@@ -1,5 +1,5 @@
 //
-//  Document+File.swift
+//  Document+Initialisers.swift
 //  NetMock
 //
 //  Created by Christopher Wainwright on 23/02/2026.
@@ -25,7 +25,20 @@ extension Document {
         guard let contents = String(data: data, encoding: .utf8)
         else { throw LoadError.invalidFileFormat }
         
-        var contentsSubstring = contents[...]
+        try self.init(contents, urlParser: urlParser)
+    }
+
+    
+    /// Loads and parses a NetMock document from a string
+    ///
+    /// - Parameters:
+    ///   - fileContents: The String contents of a `.nm` file
+    ///   - urlParser: A custom URL parser for converting string URLs to URL objects
+    /// - Throws:
+    ///   - `LoadError.incompleteParse` if parsing doesn't consume the entire file
+    ///   - `Document.ValidationError` if validation fails
+    public init(_ fileContents: String, urlParser: @Sendable @escaping (String) -> URL?) throws {
+        var contentsSubstring = fileContents[...]
         
         let document: Document = try .parser(with: urlParser).run(&contentsSubstring)
         

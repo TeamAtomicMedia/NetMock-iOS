@@ -52,7 +52,7 @@ extension NetMock {
                 .compactMap { if case .mock(let id) = $0 {return id} else {return nil} }
                 .filter { self.availableResponses[$0] == nil }
             if !missingResponses.isEmpty {
-                NetMockCore.setupLogger.warning(
+                setupLogger.warning(
                     """
                     NetMock: Response definition(s) not found for the following override responses:
                     \(missingResponses.map { "> \(NetMockCore.Identifier.mock($0).description)" }.joined(separator: "\n"))
@@ -86,7 +86,7 @@ extension NetMock {
                     fallthrough
                 case _:
                     let request = self.request
-                    NetMockCore.requestLogger.debug(
+                    requestLogger.debug(
                     """
                     NetMock: Response definition not found for \(identifier.description) on request:
                     > \(request.method.rawValue) \(request.url)

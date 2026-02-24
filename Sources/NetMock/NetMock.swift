@@ -4,7 +4,7 @@
 import Foundation
 import OSLog
 
-@_exported import NetMockCore
+import NetMockCore
 
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {
@@ -53,7 +53,7 @@ public actor NetMock {
                 let definition = Definition(document: document)
                 self.definitions[definition.request] = definition
             } catch {
-                NetMockCore.setupLogger.debug(
+                setupLogger.debug(
                     """
                     NetMock: Error reading \(url.lastPathComponent):
                     > \(error)
@@ -117,7 +117,7 @@ public actor NetMock {
             definitions[request] = nil
         } else {
             guard definitions[request] != nil else {
-                NetMockCore.setupLogger.warning(
+                setupLogger.warning(
                     """
                     NetMock: Response was not found for override:
                     > \(request.method.rawValue):\(request.url)
@@ -176,7 +176,7 @@ public actor NetMock {
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
-            NetMockCore.requestLogger.debug(
+            requestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
                 > \(url.absoluteString) \(response.header.code)
