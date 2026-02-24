@@ -7,6 +7,8 @@
 
 import Foundation
 
+import NetMockCore
+
 /// Apply this to the URLSessionConfiguration to send URL responses to NetMock Capture
 public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     @MainActor
@@ -22,7 +24,7 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     
     override public func startLoading() {
         let rawMethod = request.httpMethod ?? "GET"
-        let method: NetMock.Method = NetMock.Method(rawValue: rawMethod) ?? .GET
+        let method = NetMockCore.Method(rawValue: rawMethod) ?? .GET
         let url = request.url
         
         Task {
@@ -34,7 +36,7 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
                 client?.urlProtocolDidFinishLoading(self)
                 
                 if let url, let httpResponse = urlResponse as? HTTPURLResponse {
-                    await NetMock.DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
+                    await DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
                 }
             } catch {
                 client?.urlProtocol(self, didFailWithError: error)

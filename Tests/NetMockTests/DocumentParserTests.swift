@@ -7,9 +7,8 @@
 import Foundation
 import Testing
 
-@testable import NetMock
+import NetMock
 import Parser
-
 
 @Suite
 struct ParserTests {

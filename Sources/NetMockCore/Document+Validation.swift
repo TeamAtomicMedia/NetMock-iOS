@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension NetMock.Document {
+extension Document {
     /// Validation Errors to throw in case of invalid document
     enum ValidationError: Error {
         case invalidHeaderSequence
@@ -17,7 +17,7 @@ extension NetMock.Document {
     /// Validate document format
     /// - Prevent #Live in leading sequence items (must be final item in sequence)
     /// - Flag Labels with '#'-prefix
-    func validate() throws {
+    public func validate() throws {
         if self.sequence.dropLast().contains(.live) {
             throw ValidationError.invalidHeaderSequence
         }

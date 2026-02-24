@@ -8,44 +8,18 @@
 import Foundation
 
 extension NetMock {
-    struct Definition {
-        
-        enum LoadError: Error {
-            case invalidFileFormat
-            case incompleteParse
-            case invalidURL
-        }
-        
+    internal struct Definition {
         /// The request which will use this local override.
-        private(set) var request: Request
+        private(set) var request: NetMockCore.Request
         
         /// Each response will be returned once and then removed. The last item in the sequence will be repeated indefinitely. If a response cannot be found in the available responses, it will be ignored.
-        private(set) var responseSequence: [Identifier]
+        private(set) var responseSequence: [NetMockCore.Identifier]
         
         /// The available responses from the NetMock configuration file. These will be identified by status code, and by the name(s) if provided. A provided name can be used to disambiguate when multiple responses are provided for a status code, otherwise the first defined response for the status code will be used.
-        private(set) var availableResponses: [Identifier.Mock: Response]
+        private(set) var availableResponses: [NetMockCore.Identifier.Mock: NetMockCore.Response]
         
         
-        init(fileURL: URL, urlParser: @Sendable @escaping (String) -> URL?) throws {
-            let data = try Data(contentsOf: fileURL)
-            
-            guard let contents = String(data: data, encoding: .utf8) else {
-                throw LoadError.invalidFileFormat
-            }
-            
-            try self.init(contents, urlParser: urlParser)
-        }
-        
-        init(_ contents: String, urlParser: @Sendable @escaping (String) -> URL?) throws {
-            var contentsSubstring = contents[...]
-            let document: NetMock.Document = try .parser(with: urlParser).run(&contentsSubstring)
-            
-            if !contentsSubstring.isEmpty {
-                throw LoadError.incompleteParse
-            }
-            
-            try document.validate()
-            
+        init(document: NetMockCore.Document) {
             self.request = document.header
    
             self.responseSequence = document.sequence
@@ -54,9 +28,9 @@ extension NetMock {
                 self.responseSequence = [.code(code)]
             }
             
-            let identifierResponsePairs: [(Identifier.Mock, Response)] = document.body
+            let identifierResponsePairs: [(NetMockCore.Identifier.Mock, NetMockCore.Response)] = document.body
                 .flatMap { response in
-                    ([Identifier.Mock.code(response.header.code)] + response.header.labels.map(Identifier.Mock.label))
+                    ([NetMockCore.Identifier.Mock.code(response.header.code)] + response.header.labels.map(NetMockCore.Identifier.Mock.label))
                         .map { identifier in
                             (identifier, response)
                         }
@@ -70,16 +44,16 @@ extension NetMock {
         
         /// Configured a new responseSequence different to that defined in the original source.
         /// - Parameter responseSequence: Values must match a defined response or they will be ignored.
-        mutating func override(_ responseSequence: [Identifier]) {
+        mutating func override(_ responseSequence: [NetMockCore.Identifier]) {
             assert(!responseSequence.dropLast().contains(.live), "#Live is only supported as the final entry in a sequence")
             let missingResponses = responseSequence
                 .compactMap { if case .mock(let id) = $0 {return id} else {return nil} }
                 .filter { self.availableResponses[$0] == nil }
             if !missingResponses.isEmpty {
-                NetMock.setupLogger.warning(
+                setupLogger.warning(
                     """
                     NetMock: Response definition(s) not found for the following override responses:
-                    \(missingResponses.map { "> \(Identifier.mock($0).description)" }.joined(separator: "\n"))
+                    \(missingResponses.map { "> \(NetMockCore.Identifier.mock($0).description)" }.joined(separator: "\n"))
                     
                     Please verify that your response identifiers appear in the .nm file. 
                     """
@@ -88,7 +62,7 @@ extension NetMock {
             self.responseSequence = responseSequence
         }
         
-        func response(for identifier: Identifier.Mock) -> Response? {
+        func response(for identifier: NetMockCore.Identifier.Mock) -> NetMockCore.Response? {
             if case let .code(code) = identifier, code < 0 {
                 .init(header: .init(code: code, labels: []), body: Data())
             } else {
@@ -96,7 +70,7 @@ extension NetMock {
             }
         }
         /// Returns the next response if a sequence has been set, or the default response. Only returns `nil` if no response definitions are found, or use of a live API call has been specifically requested.
-        mutating func nextResponse() -> Response? {
+        mutating func nextResponse() -> NetMockCore.Response? {
             // If multiple responses remain, then consume the responses
             while responseSequence.count > 1 {
                 let identifier = responseSequence.removeFirst()
@@ -110,7 +84,7 @@ extension NetMock {
                     fallthrough
                 case _:
                     let request = self.request
-                    NetMock.requestLogger.debug(
+                    requestLogger.debug(
                     """
                     NetMock: Response definition not found for \(identifier.description) on request:
                     > \(request.method.rawValue) \(request.url)
