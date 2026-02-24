@@ -9,7 +9,7 @@ import Foundation
 
 extension Document {
     /// Errors thrown when a NetMock document fails validation
-    enum ValidationError: Error {
+    public enum ValidationError: Error {
         /// The `#Live` identifier appears in a non-final position in the sequence
         ///
         /// `#Live` must only appear as the last item in a response sequence.
