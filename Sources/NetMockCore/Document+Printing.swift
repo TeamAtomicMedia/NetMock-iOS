@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension NetMock.Document: CustomStringConvertible {
+extension Document: CustomStringConvertible {
     public var description: String {
         """
         \((version ?? .current).description)
@@ -18,8 +18,8 @@ extension NetMock.Document: CustomStringConvertible {
     }
 }
 
-extension NetMock.VersionNumber : CustomStringConvertible {
-    var description: String {
+extension VersionNumber : CustomStringConvertible {
+    public var description: String {
         if let patch = self.patch {
             "NetMock \(self.major).\(self.minor).\(patch)"
         } else {
@@ -27,18 +27,18 @@ extension NetMock.VersionNumber : CustomStringConvertible {
         }
     }
     
-    static var current: NetMock.VersionNumber {
+    static var current: VersionNumber {
         .init(major: 3, minor: 0, patch: 0)
     }
 }
 
-extension NetMock.Request : CustomStringConvertible {
+extension Request : CustomStringConvertible {
     public var description: String {
         "\(self.method) \(self.url.absoluteString)"
     }
 }
 
-extension NetMock.Identifier : CustomStringConvertible {
+extension Identifier : CustomStringConvertible {
     public var description: String {
         switch self {
         case .mock(.code(let code)): "\(code)"
@@ -48,8 +48,8 @@ extension NetMock.Identifier : CustomStringConvertible {
     }
 }
 
-extension NetMock.Response : CustomStringConvertible {
-    var description: String {
+extension Response : CustomStringConvertible {
+    public var description: String {
         let prettyPrintedJSONData = try? JSONSerialization.data(withJSONObject: JSONSerialization.jsonObject(with: body), options: [.prettyPrinted])
         let formattedBody = String(data: prettyPrintedJSONData ?? body, encoding: .utf8) ?? ""
         
@@ -68,8 +68,8 @@ extension NetMock.Response : CustomStringConvertible {
     }
 }
 
-extension NetMock.Response.Header : CustomStringConvertible {
-    var description: String {
+extension Response.Header : CustomStringConvertible {
+    public var description: String {
         "\(self.code) \(self.labels.joined(separator: " "))"
     }
 }

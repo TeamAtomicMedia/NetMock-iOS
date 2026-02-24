@@ -1,6 +1,8 @@
-import Testing
-@testable import NetMock
 import Foundation
+
+import Testing
+
+import NetMock
 
 @Suite(.serialized)
 struct Tests {
