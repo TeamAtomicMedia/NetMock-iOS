@@ -52,13 +52,13 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     /// - `URLSessionConfiguration.default`
     /// - `URLSessionConfiguration.ephemeral`
     /// - `URLSession.shared`
-    /// - WebViews and system URLProtocol calls
+    ///
+    /// This also applies the URLProtocol separately to WebViews and system calls
     ///
     /// After calling this method, all network responses will be captured and can be
     /// saved as `.nm` files using `DocumentStore.shared.save()`.
-    ///
-    /// Use the `*BypassingNetMockCapture` variants to create URLSessions that should
-    /// not be captured.
+    /// Use the `*BypassingNetMockCapture` variants to create
+    /// URLSessions that should not be captured.
     ///
     /// Example:
     /// ```swift

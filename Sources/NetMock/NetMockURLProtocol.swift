@@ -66,7 +66,8 @@ public class NetMockURLProtocol: URLProtocol {
     /// - `URLSessionConfiguration.default`
     /// - `URLSessionConfiguration.ephemeral`
     /// - `URLSession.shared`
-    /// - WebViews and system URLProtocol calls
+    ///
+    /// This also applies the URLProtocol separately to WebViews and system calls
     ///
     /// After calling this method, use the `*BypassingNetMock` variants to create
     /// URLSessions that should not be mocked (e.g., for loading actual `.nm` files).

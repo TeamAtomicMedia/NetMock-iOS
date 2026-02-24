@@ -10,14 +10,7 @@ import Foundation
 extension Document {
     /// Errors thrown when a NetMock document fails validation
     public enum ValidationError: Error {
-        /// The `#Live` identifier appears in a non-final position in the sequence
-        ///
-        /// `#Live` must only appear as the last item in a response sequence.
         case invalidHeaderSequence
-        
-        /// One or more labels have an invalid `#` prefix
-        ///
-        /// Labels cannot start with `#` as this prefix is reserved for special identifiers like `#Live`.
         case invalidLabels([String])
     }
 

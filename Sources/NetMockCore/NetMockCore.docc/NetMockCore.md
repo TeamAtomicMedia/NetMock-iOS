@@ -4,14 +4,14 @@ Core data types, parsing, validation, and capture functionality for NetMock file
 
 ## Overview
 
-NetMockCore provides the fundamental building blocks for working with NetMock (`.nm`) files without requiring URLProtocol integration. This module is ideal for:
+NetMockCore provides the fundamental building blocks for working with NetMock (`.nm`) files without requiring URLProtocol integration. This module can be used for:
 
 - **Build Tools**: Parse and generate `.nm` files in build scripts
 - **Command-Line Utilities**: Work with NetMock files from the terminal
 - **File Generators**: Create NetMock files programmatically
 - **Parsers**: Extract information from existing `.nm` files
 
-If you need full mocking functionality with URLProtocol integration, use the ``NetMock`` module instead, which re-exports everything from NetMockCore.
+If you need full mocking functionality with URLProtocol integration, use the `NetMock` module instead, which re-exports essential components from NetMockCore.
 
 ## Key Features
 
@@ -86,10 +86,8 @@ Validate NetMock documents to ensure they follow format rules:
 ```swift
 do {
     try document.validate()
-} catch Document.ValidationError.invalidHeaderSequence {
-    print("#Live must only appear at the end of the sequence")
-} catch Document.ValidationError.invalidLabels(let labels) {
-    print("Invalid labels with # prefix: \(labels)")
+} catch {
+    print("Invalid document format: \(error)")
 }
 ```
 
@@ -167,9 +165,6 @@ The core data model consists of:
 ### Utilities
 
 - ``VersionNumber``
-- ``setupLogger``
-- ``requestLogger``
-- ``captureLogger``
 
 ### Validation
 
