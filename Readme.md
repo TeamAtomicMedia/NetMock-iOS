@@ -1,9 +1,19 @@
 # NetMock
 
-## Setup
-
 NetMock is a tool to swap in mock responses for API calls, for use in offline app configurations and unit/UI tests.
 NetMock will inject the mock responses, where defined via nm files, and fall back to live API calls where a NetMock file can't be found.
+
+## Package Structure
+
+NetMock is organised into two modules:
+
+- **NetMockCore**: Core data types, parsing, validation, and capture functionality. Use this module if you only need to parse or generate NetMock files without URLProtocol integration. This is useful for build tools, scripts, or utilities that work with `.nm` files.
+
+- **NetMock**: Full mocking functionality including URLProtocol integration. This module depends on and re-exports NetMockCore, providing the complete NetMock experience.
+
+**For most users**, simply `import NetMock` to access everything you need. The modular structure allows advanced users to depend on only `NetMockCore` for lightweight parsing and file generation without pulling in URLProtocol dependencies.
+
+## Setup
 
 Make sure you initialise NetMock before use:
 ```swift

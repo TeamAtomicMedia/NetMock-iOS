@@ -60,6 +60,23 @@ public class NetMockURLProtocol: URLProtocol {
     
     override public func stopLoading() {}
     
+    /// Applies NetMock globally to all URLSessions in the app
+    ///
+    /// This method uses method swizzling to inject NetMockURLProtocol into:
+    /// - `URLSessionConfiguration.default`
+    /// - `URLSessionConfiguration.ephemeral`
+    /// - `URLSession.shared`
+    ///
+    /// This also applies the URLProtocol separately to WebViews and system calls
+    ///
+    /// After calling this method, use the `*BypassingNetMock` variants to create
+    /// URLSessions that should not be mocked (e.g., for loading actual `.nm` files).
+    ///
+    /// Example:
+    /// ```swift
+    /// NetMockURLProtocol.applyGlobally()
+    /// // Now all network calls will use NetMock
+    /// ```
     public static func applyGlobally() {
         // WebViews and system
         URLProtocol.registerClass(NetMockURLProtocol.self)

@@ -7,15 +7,10 @@
 
 import Foundation
 
+import NetMockCore
+
 extension NetMock {
-    struct Definition {
-        
-        enum LoadError: Error {
-            case invalidFileFormat
-            case incompleteParse
-            case invalidURL
-        }
-        
+    internal struct Definition {
         /// The request which will use this local override.
         private(set) var request: Request
         
@@ -26,26 +21,7 @@ extension NetMock {
         private(set) var availableResponses: [Identifier.Mock: Response]
         
         
-        init(fileURL: URL, urlParser: @Sendable @escaping (String) -> URL?) throws {
-            let data = try Data(contentsOf: fileURL)
-            
-            guard let contents = String(data: data, encoding: .utf8) else {
-                throw LoadError.invalidFileFormat
-            }
-            
-            try self.init(contents, urlParser: urlParser)
-        }
-        
-        init(_ contents: String, urlParser: @Sendable @escaping (String) -> URL?) throws {
-            var contentsSubstring = contents[...]
-            let document: NetMock.Document = try .parser(with: urlParser).run(&contentsSubstring)
-            
-            if !contentsSubstring.isEmpty {
-                throw LoadError.incompleteParse
-            }
-            
-            try document.validate()
-            
+        init(document: Document) {
             self.request = document.header
    
             self.responseSequence = document.sequence
@@ -76,7 +52,7 @@ extension NetMock {
                 .compactMap { if case .mock(let id) = $0 {return id} else {return nil} }
                 .filter { self.availableResponses[$0] == nil }
             if !missingResponses.isEmpty {
-                NetMock.setupLogger.warning(
+                setupLogger.warning(
                     """
                     NetMock: Response definition(s) not found for the following override responses:
                     \(missingResponses.map { "> \(Identifier.mock($0).description)" }.joined(separator: "\n"))
@@ -110,7 +86,7 @@ extension NetMock {
                     fallthrough
                 case _:
                     let request = self.request
-                    NetMock.requestLogger.debug(
+                    requestLogger.debug(
                     """
                     NetMock: Response definition not found for \(identifier.description) on request:
                     > \(request.method.rawValue) \(request.url)

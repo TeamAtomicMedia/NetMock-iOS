@@ -1,13 +1,13 @@
 {
-  "originHash" : "31b500ef26fdcdf0e9a53fedabe895a7121f61d3ab9c81fffef1024db144a7dc",
+  "originHash" : "7ade2416bc28313cfaf91c574a55de54ddb3f204add705df18314cc51b5897ff",
   "pins" : [
     {
       "identity" : "parser-ios",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/TeamAtomicMedia/Parser-iOS.git",
       "state" : {
-        "revision" : "fdd6eefbe381c824b992cac3183cd14725eda223",
-        "version" : "1.0.3"
+        "revision" : "84a50e49def79c5985b3134f5f733603017962c2",
+        "version" : "2.1.1"
       }
     }
   ],

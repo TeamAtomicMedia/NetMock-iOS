@@ -4,6 +4,8 @@
 import Foundation
 import OSLog
 
+import NetMockCore
+
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
 public actor NetMock {
     private var definitions: [Request: Definition] = [:]
@@ -47,10 +49,11 @@ public actor NetMock {
         definitions.reserveCapacity(urls.count)
         for url in urls {
             do {
-                let definition = try Definition(fileURL: url, urlParser: urlParser)
+                let document = try Document(fileURL: url, urlParser: urlParser)
+                let definition = Definition(document: document)
                 self.definitions[definition.request] = definition
             } catch {
-                NetMock.setupLogger.debug(
+                setupLogger.debug(
                     """
                     NetMock: Error reading \(url.lastPathComponent):
                     > \(error)
@@ -81,7 +84,7 @@ public actor NetMock {
     /// - Parameters:
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
-    ///   - responses: A list of response names or codes from the nm file to use as the response.
+    ///   - response: A list of response names or codes from the nm file to use as the response.
     public func override(_ method: Method = .GET, _ url: URL, response: Identifier) {
         override(method, url, responses: [response])
     }
@@ -114,7 +117,7 @@ public actor NetMock {
             definitions[request] = nil
         } else {
             guard definitions[request] != nil else {
-                NetMock.setupLogger.warning(
+                setupLogger.warning(
                     """
                     NetMock: Response was not found for override:
                     > \(request.method.rawValue):\(request.url)
@@ -173,7 +176,7 @@ public actor NetMock {
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
-            NetMock.requestLogger.debug(
+            requestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
                 > \(url.absoluteString) \(response.header.code)

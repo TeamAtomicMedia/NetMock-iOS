@@ -7,6 +7,8 @@
 
 import Foundation
 
+import NetMockCore
+
 /// Apply this to the URLSessionConfiguration to send URL responses to NetMock Capture
 public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     @MainActor
@@ -22,7 +24,7 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     
     override public func startLoading() {
         let rawMethod = request.httpMethod ?? "GET"
-        let method: NetMock.Method = NetMock.Method(rawValue: rawMethod) ?? .GET
+        let method = Method(rawValue: rawMethod) ?? .GET
         let url = request.url
         
         Task {
@@ -34,7 +36,7 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
                 client?.urlProtocolDidFinishLoading(self)
                 
                 if let url, let httpResponse = urlResponse as? HTTPURLResponse {
-                    await NetMock.DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
+                    await DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
                 }
             } catch {
                 client?.urlProtocol(self, didFailWithError: error)
@@ -44,6 +46,27 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     
     override public func stopLoading() {}
     
+    /// Applies NetMock capture globally to all URLSessions in the app
+    ///
+    /// This method uses method swizzling to inject NetMockCaptureURLProtocol into:
+    /// - `URLSessionConfiguration.default`
+    /// - `URLSessionConfiguration.ephemeral`
+    /// - `URLSession.shared`
+    ///
+    /// This also applies the URLProtocol separately to WebViews and system calls
+    ///
+    /// After calling this method, all network responses will be captured and can be
+    /// saved as `.nm` files using `DocumentStore.shared.save()`.
+    /// Use the `*BypassingNetMockCapture` variants to create
+    /// URLSessions that should not be captured.
+    ///
+    /// Example:
+    /// ```swift
+    /// NetMockCaptureURLProtocol.applyGlobally()
+    /// // Now all network responses will be captured
+    /// // Later, save them:
+    /// await DocumentStore.shared.save()
+    /// ```
     @MainActor
     public static func applyGlobally() {
         _ = NetMockCaptureURLProtocol.session
