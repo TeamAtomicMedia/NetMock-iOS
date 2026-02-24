@@ -46,6 +46,27 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     
     override public func stopLoading() {}
     
+    /// Applies NetMock capture globally to all URLSessions in the app
+    ///
+    /// This method uses method swizzling to inject NetMockCaptureURLProtocol into:
+    /// - `URLSessionConfiguration.default`
+    /// - `URLSessionConfiguration.ephemeral`
+    /// - `URLSession.shared`
+    /// - WebViews and system URLProtocol calls
+    ///
+    /// After calling this method, all network responses will be captured and can be
+    /// saved as `.nm` files using `DocumentStore.shared.save()`.
+    ///
+    /// Use the `*BypassingNetMockCapture` variants to create URLSessions that should
+    /// not be captured.
+    ///
+    /// Example:
+    /// ```swift
+    /// NetMockCaptureURLProtocol.applyGlobally()
+    /// // Now all network responses will be captured
+    /// // Later, save them:
+    /// await DocumentStore.shared.save()
+    /// ```
     @MainActor
     public static func applyGlobally() {
         _ = NetMockCaptureURLProtocol.session

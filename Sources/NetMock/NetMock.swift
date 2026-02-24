@@ -84,7 +84,7 @@ public actor NetMock {
     /// - Parameters:
     ///   - method: The HTTP request method to observe. Defaults to "GET".
     ///   - url: The URL whose response will be overridden.
-    ///   - responses: A list of response names or codes from the nm file to use as the response.
+    ///   - response: A list of response names or codes from the nm file to use as the response.
     public func override(_ method: NetMockCore.Method = .GET, _ url: URL, response: NetMockCore.Identifier) {
         override(method, url, responses: [response])
     }

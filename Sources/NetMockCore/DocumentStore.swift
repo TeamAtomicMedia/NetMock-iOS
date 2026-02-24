@@ -14,7 +14,10 @@ private extension Document {
     }
 }
 
-/// A struct containing the information associated to a given network request and response
+/// Represents a captured network request and response pair
+///
+/// Use this to create entries for the `DocumentStore` when capturing real network responses
+/// to generate NetMock files.
 public struct DocumentStoreEntry: Sendable {
     /// A struct containing information associated with a single captured response
     ///
@@ -38,14 +41,39 @@ public struct DocumentStoreEntry: Sendable {
     let request: Request
     let response: CapturedResponse
     
+    /// Creates a new captured request/response entry
+    /// - Parameters:
+    ///   - method: HTTP method of the request
+    ///   - url: URL of the request
+    ///   - statusCode: HTTP status code of the response
+    ///   - body: Response body data
     public init(method: Method, url: URL, statusCode: Int, body: Data) {
         self.request = .init(method: method, url: url)
         self.response = .init(statusCode: statusCode, body: body)
     }
 }
 
-/// A singleton to capture network responses, structure them into NetMock documents, and persist them to the filesystem.
+/// A singleton for capturing network responses and generating NetMock files
+///
+/// Use `DocumentStore` to capture real network responses during development or testing,
+/// then persist them as `.nm` files for later use with NetMock.
+///
+/// Example usage:
+/// ```swift
+/// // Capture a response
+/// let entry = DocumentStoreEntry(
+///     method: .GET,
+///     url: URL(string: "https://api.example.com/users")!,
+///     statusCode: 200,
+///     body: responseData
+/// )
+/// await DocumentStore.shared.add(entry)
+///
+/// // Save captured responses to files
+/// await DocumentStore.shared.save()
+/// ```
 public actor DocumentStore {
+    /// The shared singleton instance
     public static let shared: DocumentStore = .init()
     
     private init() {}
@@ -61,7 +89,7 @@ public actor DocumentStore {
         documents[request, default: []].append(response)
     }
     
-    /// Persist captured responses in DocumentStore to filesystem as .nm files
+    /// Persist captured responses in DocumentStore to filesystem as `.nm` files
     /// - Parameters:
     ///   - file: The base directory where files will be written. Defaults to the app’s document directory.
     ///   - modifyContents: A closure for transforming the saved file contents (e.g. redacting or generalising domains). Defaults to a closure with no effect.
@@ -77,9 +105,9 @@ public actor DocumentStore {
         save(toDirectory: file, modifyContents: modifyContents, customFilename: customFilename, customSubpath: customDirectory)
     }
     
-    /// Persist captured responses in DocumentStore to filesystem as .nm files
+    /// Persist captured responses in DocumentStore to filesystem as `.nm` files
     /// - Parameters:
-    ///   - toDirectory: The base directory where files will be written. Defaults to the app’s document directory.
+    ///   - directory: The base directory where files will be written. Defaults to the app’s document directory.
     ///   - modifyContents: A closure for transforming the saved file contents (e.g. redacting or generalising domains). Defaults to a closure with no effect.
     ///   - customFilename: A closure for customising the file’s name, not including the file extension. Defaults to the last component of the urlString (if a valid url) otherwise the full urlString.
     ///   - customSubpath: A closure for customising the directory structure for each response. Defaults to all but the last component of the urlString plus the method.

@@ -8,15 +8,26 @@
 import Foundation
 
 extension Document {
-    /// Validation Errors to throw in case of invalid document
+    /// Errors thrown when a NetMock document fails validation
     enum ValidationError: Error {
+        /// The `#Live` identifier appears in a non-final position in the sequence
+        ///
+        /// `#Live` must only appear as the last item in a response sequence.
         case invalidHeaderSequence
+        
+        /// One or more labels have an invalid `#` prefix
+        ///
+        /// Labels cannot start with `#` as this prefix is reserved for special identifiers like `#Live`.
         case invalidLabels([String])
     }
 
-    /// Validate document format
-    /// - Prevent #Live in leading sequence items (must be final item in sequence)
-    /// - Flag Labels with '#'-prefix
+    /// Validates the NetMock document format
+    ///
+    /// Validation checks:
+    /// - `#Live` identifier only appears as the final item in the sequence
+    /// - No labels use the reserved `#` prefix
+    ///
+    /// - Throws: `ValidationError` if validation fails
     public func validate() throws {
         if self.sequence.dropLast().contains(.live) {
             throw ValidationError.invalidHeaderSequence
