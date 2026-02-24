@@ -10,6 +10,17 @@ import Foundation
 import NetMockCore
 
 extension Document {
+    /// Loads and parses a NetMock document from a file
+    ///
+    /// This initializer reads a `.nm` file, parses its contents, and validates the format.
+    ///
+    /// - Parameters:
+    ///   - fileURL: The URL of the `.nm` file to load
+    ///   - urlParser: A custom URL parser for converting string URLs to URL objects
+    /// - Throws:
+    ///   - `LoadError.invalidFileFormat` if the file is not valid UTF-8
+    ///   - `LoadError.incompleteParse` if parsing doesn't consume the entire file
+    ///   - `Document.ValidationError` if validation fails
     public init(fileURL: URL, urlParser: @Sendable @escaping (String) -> URL?) throws {
         let data = try Data(contentsOf: fileURL)
         

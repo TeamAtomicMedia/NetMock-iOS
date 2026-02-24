@@ -7,6 +7,10 @@
 
 import Foundation
 
+// MARK: - CustomStringConvertible Conformances
+// This file provides CustomStringConvertible conformances for NetMock types,
+// allowing them to be serialized back to `.nm` file format.
+
 extension Document: CustomStringConvertible {
     public var description: String {
         """
@@ -27,6 +31,7 @@ extension VersionNumber : CustomStringConvertible {
         }
     }
     
+    /// The current NetMock file format version
     static var current: VersionNumber {
         .init(major: 3, minor: 0, patch: 0)
     }

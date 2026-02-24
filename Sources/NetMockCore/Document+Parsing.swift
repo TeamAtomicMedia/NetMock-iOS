@@ -9,6 +9,10 @@ import Foundation
 
 @_exported import Parser
 
+// MARK: - Parser Conformances
+// This file provides Parsable conformances for NetMock types, allowing them to be
+// parsed from `.nm` file contents using the Parser library.
+
 extension VersionNumber : Parsable {
     public static var parser: Parser<VersionNumber> {
         .init { input in
