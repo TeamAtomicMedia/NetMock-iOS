@@ -53,7 +53,7 @@ public actor NetMock {
                 let definition = Definition(document: document)
                 self.definitions[definition.request] = definition
             } catch {
-                setupLogger.debug(
+                NetMockCore.setupLogger.debug(
                     """
                     NetMock: Error reading \(url.lastPathComponent):
                     > \(error)
@@ -117,7 +117,7 @@ public actor NetMock {
             definitions[request] = nil
         } else {
             guard definitions[request] != nil else {
-                setupLogger.warning(
+                NetMockCore.setupLogger.warning(
                     """
                     NetMock: Response was not found for override:
                     > \(request.method.rawValue):\(request.url)
@@ -176,7 +176,7 @@ public actor NetMock {
             httpVersion: "HTTP/1.1",
             headerFields: ["Content-Type": "application/json"]
         ) else {
-            requestLogger.debug(
+            NetMockCore.requestLogger.debug(
                 """
                 NetMock: Unexpectedly failed to initialise HTTPURLResponse instance from mock response for:
                 > \(url.absoluteString) \(response.header.code)

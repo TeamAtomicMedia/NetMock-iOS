@@ -7,6 +7,8 @@
 
 import Foundation
 
+import NetMockCore
+
 extension NetMock {
     internal struct Definition {
         /// The request which will use this local override.
@@ -50,7 +52,7 @@ extension NetMock {
                 .compactMap { if case .mock(let id) = $0 {return id} else {return nil} }
                 .filter { self.availableResponses[$0] == nil }
             if !missingResponses.isEmpty {
-                setupLogger.warning(
+                NetMockCore.setupLogger.warning(
                     """
                     NetMock: Response definition(s) not found for the following override responses:
                     \(missingResponses.map { "> \(NetMockCore.Identifier.mock($0).description)" }.joined(separator: "\n"))
@@ -84,7 +86,7 @@ extension NetMock {
                     fallthrough
                 case _:
                     let request = self.request
-                    requestLogger.debug(
+                    NetMockCore.requestLogger.debug(
                     """
                     NetMock: Response definition not found for \(identifier.description) on request:
                     > \(request.method.rawValue) \(request.url)

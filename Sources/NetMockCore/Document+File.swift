@@ -7,12 +7,10 @@
 
 import Foundation
 
-import NetMockCore
-
 extension Document {
     /// Loads and parses a NetMock document from a file
     ///
-    /// This initializer reads a `.nm` file, parses its contents, and validates the format.
+    /// This initialiser reads a `.nm` file, parses its contents, and validates the format.
     ///
     /// - Parameters:
     ///   - fileURL: The URL of the `.nm` file to load
