@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Parser
 
 extension NetMock.VersionNumber : Parsable {
     static var parser: Parser<NetMock.VersionNumber> {
@@ -13,7 +14,7 @@ extension NetMock.VersionNumber : Parsable {
             let preambleParser: Parser<Void> = .token("NetMock") *> .whitespace().discard()
             
             let majorParser: Parser<Int> = .number()
-            let auxiliaryNumber: Parser<Int> = .character(".") *> .number()
+            let auxiliaryNumber: Parser<Int> = .token(".") *> .number()
             
             _ = try preambleParser.run(&input)
             let major: Int = try majorParser.run(&input)
@@ -26,7 +27,7 @@ extension NetMock.VersionNumber : Parsable {
 }
 
 extension NetMock.Identifier : Parsable {
-    static var parser: Parser<NetMock.Identifier> {
+    public static var parser: Parser<NetMock.Identifier> {
         .init { input in
             let liveParser: Parser<String> = .token("#Live")
             let codeParser: Parser<Int> = .number()
@@ -42,7 +43,7 @@ extension NetMock.Identifier : Parsable {
 }
 
 extension NetMock.Request : Parsable {
-    static var parser: Parser<NetMock.Request> {
+    public static var parser: Parser<NetMock.Request> {
         self.parser(with: URL.init(string:))
     }
     
