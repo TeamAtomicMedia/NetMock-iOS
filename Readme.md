@@ -1,3 +1,5 @@
+![[Sources/NetMock/NetMock.docc/NetMock.md]]
+
 # NetMock
 
 NetMock is a tool to swap in mock responses for API calls, for use in offline app configurations and unit/UI tests.
