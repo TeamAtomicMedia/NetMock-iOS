@@ -29,7 +29,7 @@ public enum Method : String, CaseIterable, Sendable, Codable {
 /// ```
 /// GET https://api.example.com/users #Live
 /// ```
-public enum Identifier : Equatable, Sendable, Codable, Hashable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+public enum Identifier : Sendable, Codable, Hashable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
     case mock(Mock), live
     
     /// Creates a code identifier
