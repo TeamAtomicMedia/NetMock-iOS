@@ -29,7 +29,7 @@ public enum Method : String, CaseIterable, Sendable, Codable {
 /// ```
 /// GET https://api.example.com/users #Live
 /// ```
-public enum Identifier : Equatable, Sendable, Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+public enum Identifier : Sendable, Codable, Hashable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
     case mock(Mock), live
     
     /// Creates a code identifier
@@ -72,7 +72,7 @@ public enum Identifier : Equatable, Sendable, Codable, ExpressibleByStringLitera
 /// Represents an HTTP request with a method and URL
 ///
 /// Used to identify which mock response should be returned for a given request.
-public struct Request : Sendable, Hashable {
+public struct Request : Sendable, Hashable, Codable {
     /// The HTTP method (GET, POST, etc.)
     public let method: Method
     /// The request URL
@@ -95,7 +95,7 @@ public struct Request : Sendable, Hashable {
 /// NetMock 3.0.0
 /// ```
 /// The version follows semantic versioning with major, minor, and optional patch components.
-public struct VersionNumber : Comparable, Sendable {
+public struct VersionNumber : Sendable, Hashable, Codable, Comparable {
     /// Major version number
     public let major: Int
     /// Minor version number
@@ -127,9 +127,9 @@ public struct VersionNumber : Comparable, Sendable {
 /// Represents a mock HTTP response with headers and body
 ///
 /// Each response in a NetMock file consists of a status code, optional labels, and an optional body.
-public struct Response : Sendable {
+public struct Response : Sendable, Hashable, Codable {
     /// Response header containing the status code and labels
-    public struct Header : Sendable {
+    public struct Header : Sendable, Hashable, Codable {
         /// HTTP status code (e.g., 200, 404, 500)
         public let code: Int
         /// Optional labels for identifying this response (e.g., "success", "error")
@@ -178,7 +178,9 @@ public struct Response : Sendable {
 /// 500
 /// {"error": "Internal Server Error"}
 /// ```
-public struct Document : Sendable {
+public struct Document : Identifiable, Sendable, Hashable, Codable {
+    public var id: Request { header }
+    
     /// Optional format version (defaults to current version if not specified)
     public let version: VersionNumber?
     /// The HTTP request this document responds to
