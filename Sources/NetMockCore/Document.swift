@@ -74,9 +74,9 @@ public enum Identifier : Sendable, Codable, Hashable, ExpressibleByStringLiteral
 /// Used to identify which mock response should be returned for a given request.
 public struct Request : Sendable, Hashable, Codable {
     /// The HTTP method (GET, POST, etc.)
-    public let method: Method
+    public var method: Method
     /// The request URL
-    public let url: URL
+    public var url: URL
     
     /// Creates a new request
     /// - Parameters:
@@ -97,11 +97,11 @@ public struct Request : Sendable, Hashable, Codable {
 /// The version follows semantic versioning with major, minor, and optional patch components.
 public struct VersionNumber : Sendable, Hashable, Codable, Comparable {
     /// Major version number
-    public let major: Int
+    public var major: Int
     /// Minor version number
-    public let minor: Int
+    public var minor: Int
     /// Optional patch version number
-    public let patch: Int?
+    public var patch: Int?
     
     /// Creates a new version number
     /// - Parameters:
@@ -131,9 +131,9 @@ public struct Response : Sendable, Hashable, Codable {
     /// Response header containing the status code and labels
     public struct Header : Sendable, Hashable, Codable {
         /// HTTP status code (e.g., 200, 404, 500)
-        public let code: Int
+        public var code: Int
         /// Optional labels for identifying this response (e.g., "success", "error")
-        public let labels: [String]
+        public var labels: [String]
         
         /// Creates a new response header
         /// - Parameters:
@@ -146,9 +146,9 @@ public struct Response : Sendable, Hashable, Codable {
     }
     
     /// The response header
-    public let header: Header
+    public var header: Header
     /// The response body as raw data
-    public let body: Data
+    public var body: Data
     
     /// Creates a new response
     /// - Parameters:
@@ -182,11 +182,11 @@ public struct Document : Identifiable, Sendable, Hashable, Codable {
     public var id: Request { header }
     
     /// Optional format version (defaults to current version if not specified)
-    public let version: VersionNumber?
+    public var version: VersionNumber?
     /// The HTTP request this document responds to
-    public let header: Request
+    public var header: Request
     /// Sequence of response identifiers defining order (empty means use first response)
-    public let sequence: [Identifier]
+    public var sequence: [Identifier]
     /// Available response definitions
     public var body: [Response]
     
