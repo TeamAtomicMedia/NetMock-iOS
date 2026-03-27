@@ -10,7 +10,7 @@ import Foundation
 /// Apply this to the URLSessionConfiguration to send URL requests with nm files present through NetMock.
 public class NetMockURLProtocol: URLProtocol {
     static func withNetMock<T: Sendable>(_ perform: @Sendable @escaping (isolated NetMock) -> T) -> T {
-        var result: T!
+        nonisolated(unsafe) var result: T!
         let semaphore = DispatchSemaphore(value: 0)
         let netMock = NetMock.shared
         Task {
