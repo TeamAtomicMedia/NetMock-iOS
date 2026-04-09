@@ -19,9 +19,7 @@ public class NetMockURLProtocol: URLProtocol {
     }
     
     override public class func canInit(with request: URLRequest) -> Bool {
-        objcPerformAsync {
-            await NetMock.shared.shouldHandle(request)
-        }
+        NetMock.shared.shouldHandle(request)
     }
     
     override init(request: URLRequest, cachedResponse: CachedURLResponse?, client: (any URLProtocolClient)?) {
@@ -33,7 +31,7 @@ public class NetMockURLProtocol: URLProtocol {
     }
     
     override public func startLoading() {
-        guard let response = objcPerformAsync({ [request] in await NetMock.shared.mockResponse(for: request) }) else {
+        guard let response = NetMock.shared.mockResponse(for: request) else {
             client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
             return
         }

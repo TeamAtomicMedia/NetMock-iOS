@@ -8,10 +8,12 @@
 import Foundation
 
 import NetMockCore
+import Synchronization
 
 /// Apply this to the URLSessionConfiguration to send URL responses to NetMock Capture
-public class NetMockCaptureURLProtocol: URLProtocol {
+public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
     static let session = URLSession(configuration: .default)
+    private let fetchTask: Mutex<Task<(), Never>?> = .init(nil)
     
     public override class func canInit(with request: URLRequest) -> Bool {
         guard let scheme = request.url?.scheme else { return false }
@@ -25,26 +27,31 @@ public class NetMockCaptureURLProtocol: URLProtocol {
         let rawMethod = request.httpMethod ?? "GET"
         let method = Method(rawValue: rawMethod) ?? .GET
         let url = request.url
-        do {
-            let (data, urlResponse) = try objcPerformAsync { [request] in
-                try await NetMockCaptureURLProtocol.session.data(for: request)
-            }
-            
-            client?.urlProtocol(self, didReceive: urlResponse, cacheStoragePolicy: .notAllowed)
-            client?.urlProtocol(self, didLoad: data)
-            client?.urlProtocolDidFinishLoading(self)
-            
-            if let url, let httpResponse = urlResponse as? HTTPURLResponse {
-                objcPerformAsync {
-                    await DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
+        fetchTask.withLock { fetchTask in
+            fetchTask = Task { @Sendable [client, request] in
+                do {
+                    let (data, urlResponse) = try await NetMockCaptureURLProtocol.session.data(for: request)
+                    
+                    client?.urlProtocol(self, didReceive: urlResponse, cacheStoragePolicy: .notAllowed)
+                    client?.urlProtocol(self, didLoad: data)
+                    client?.urlProtocolDidFinishLoading(self)
+                    
+                    if let url, let httpResponse = urlResponse as? HTTPURLResponse {
+                        await DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
+                    }
+                } catch {
+                    client?.urlProtocol(self, didFailWithError: error)
                 }
             }
-        } catch {
-            client?.urlProtocol(self, didFailWithError: error)
         }
     }
     
-    override public func stopLoading() {}
+    override public func stopLoading() {
+        fetchTask.withLock { fetchTask in
+            fetchTask?.cancel()
+            fetchTask = nil
+        }
+    }
     
     /// Applies NetMock capture globally to all URLSessions in the app
     ///
