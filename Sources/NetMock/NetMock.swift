@@ -3,22 +3,26 @@
 
 import Foundation
 import OSLog
+import Synchronization
 
 import NetMockCore
 
 /// The NetMock API. Call `initialise` to load NetMock files, and then call `override` to change how mock responses are selected.
-public actor NetMock {
-    private var definitions: [Request: Definition] = [:]
+public final class NetMock: Sendable {
+    private struct Storage {
+        var definitions: [Request: Definition] = [:]
+        var handleAllRequests = true
+        var urlParser: @Sendable (String) -> URL? = URL.init(string:)
+    }
     
     /// The NetMock instance used by NetMockURLProtocol to keep tracks of mock responses to substitute. Must be initialised before use.
     public static let shared = NetMock()
     
+    private let storage = Mutex(Storage())
+    
     // Ideally the client could initialise NetMock itself and create URLProtocol with a reference, but URLProtocol can't be initialised directly so we have to use singleton pattern to provide access to NetMock within URLProtocol.
     private init() {}
     
-    private(set) var handleAllRequests = true
-    
-    private var urlParser: @Sendable (String) -> URL? = URL.init(string:)
     /// By default, NetMock will attempt to parse URLs in nm files directly to a URL.
     ///
     /// Use this method to intercept the URL parsing to perform a custom mapping.
@@ -28,37 +32,43 @@ public actor NetMock {
     /// For example, you can use this to convert API paths to a full URL, where the domain varies by app configuration.
     /// - Parameter parser: The URL parser that will become the new initially attempted parser.
     public func applyCustomURLParsing(_ parser: @Sendable @escaping (String) -> URL?) {
-        self.urlParser = { [oldValue = self.urlParser] string in
-            parser(string) ?? oldValue(string)
+        storage.withLock { storage in
+            storage.urlParser = { [oldValue = storage.urlParser] string in
+                parser(string) ?? oldValue(string)
+            }
         }
     }
     
     /// Blocks requests which do not have a nm file included, producing a resource unavailable error.
     public func allowUnmockedRequests(_ newValue: Bool = true) {
-        handleAllRequests = !newValue
+        storage.withLock { storage in
+            storage.handleAllRequests = !newValue
+        }
     }
     
     /// Loads the nm files in the given bundle.
     ///
     /// - Parameter bundle: Typically `.main` is fine, but `.module` may be preferred if nm files are included within a package.
     public func initialise(bundle: Bundle = .main) {
-        definitions.removeAll()
-        guard let urls = bundle.urls(forResourcesWithExtension: "nm", subdirectory: nil) else {
-            return
-        }
-        definitions.reserveCapacity(urls.count)
-        for url in urls {
-            do {
-                let document = try Document(fileURL: url, urlParser: urlParser)
-                let definition = Definition(document: document)
-                self.definitions[definition.request] = definition
-            } catch {
-                setupLogger.debug(
+        storage.withLock { storage in
+            storage.definitions.removeAll()
+            guard let urls = bundle.urls(forResourcesWithExtension: "nm", subdirectory: nil) else {
+                return
+            }
+            storage.definitions.reserveCapacity(urls.count)
+            for url in urls {
+                do {
+                    let document = try Document(fileURL: url, urlParser: storage.urlParser)
+                    let definition = Definition(document: document)
+                    storage.definitions[definition.request] = definition
+                } catch {
+                    setupLogger.debug(
                     """
                     NetMock: Error reading \(url.lastPathComponent):
                     > \(error)
                     """
-                )
+                    )
+                }
             }
         }
     }
@@ -103,8 +113,26 @@ public actor NetMock {
     ///
     /// - Parameter overrides: The list of overrides to apply.
     public func applyOverrides(_ overrides: [Override]) {
-        for override in overrides {
-            applyOverride(override)
+        storage.withLock { storage in
+            for override in overrides {
+                let request = Request(method: override.method, url: override.url)
+                if override.responses.isEmpty {
+                    storage.definitions[request] = nil
+                } else {
+                    guard storage.definitions[request] != nil else {
+                        setupLogger.warning(
+                        """
+                        NetMock: Response was not found for override:
+                        > \(request.method.rawValue):\(request.url)
+                        
+                        Verify that a corresponding .nm file exists.
+                        """
+                        )
+                        return
+                    }
+                    storage.definitions[request]?.override(override.responses)
+                }
+            }
         }
     }
     
@@ -112,23 +140,7 @@ public actor NetMock {
     ///
     /// - Parameter override: The override to apply.
     public func applyOverride(_ override: Override) {
-        let request = Request(method: override.method, url: override.url)
-        if override.responses.isEmpty {
-            definitions[request] = nil
-        } else {
-            guard definitions[request] != nil else {
-                setupLogger.warning(
-                    """
-                    NetMock: Response was not found for override:
-                    > \(request.method.rawValue):\(request.url)
-                    
-                    Verify that a corresponding .nm file exists.
-                    """
-                )
-                return
-            }
-            definitions[request]?.override(override.responses)
-        }
+        applyOverrides([override])
     }
     
     // Used by URLProtocol to decide whether to handle the request.
@@ -139,11 +151,13 @@ public actor NetMock {
             let url = request.url
         else { return false }
         let netMockRequest = Request(method: method, url: url)
-        if let definition = definitions[netMockRequest], !definition.responseSequence.isEmpty {
-            let isLive = definition.responseSequence.first == .live // If we see #Live in a sequence, don't intercept
-            return !isLive
-        } else {
-            return handleAllRequests
+        return storage.withLock { storage in
+            if let definition = storage.definitions[netMockRequest], !definition.responseSequence.isEmpty {
+                let isLive = definition.responseSequence.first == .live // If we see #Live in a sequence, don't intercept
+                return !isLive
+            } else {
+                return storage.handleAllRequests
+            }
         }
     }
     
@@ -162,7 +176,7 @@ public actor NetMock {
         
         let netMockRequest = Request(method: method, url: url)
         
-        guard let response = definitions[netMockRequest]?.nextResponse()
+        guard let response = storage.withLock({ storage in storage.definitions[netMockRequest]?.nextResponse() })
         else { return nil }
         
         
