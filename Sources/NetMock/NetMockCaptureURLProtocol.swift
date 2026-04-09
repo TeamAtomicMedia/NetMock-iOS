@@ -10,9 +10,8 @@ import Foundation
 import NetMockCore
 
 /// Apply this to the URLSessionConfiguration to send URL responses to NetMock Capture
-public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
-    @MainActor
-    static var session = URLSession(configuration: .default)
+public class NetMockCaptureURLProtocol: URLProtocol {
+    static let session = URLSession(configuration: .default)
     
     public override class func canInit(with request: URLRequest) -> Bool {
         guard let scheme = request.url?.scheme else { return false }
@@ -26,21 +25,22 @@ public class NetMockCaptureURLProtocol: URLProtocol, @unchecked Sendable {
         let rawMethod = request.httpMethod ?? "GET"
         let method = Method(rawValue: rawMethod) ?? .GET
         let url = request.url
-        
-        Task {
-            do {
-                let (data, urlResponse) = try await NetMockCaptureURLProtocol.session.data(for: request)
-                
-                client?.urlProtocol(self, didReceive: urlResponse, cacheStoragePolicy: .notAllowed)
-                client?.urlProtocol(self, didLoad: data)
-                client?.urlProtocolDidFinishLoading(self)
-                
-                if let url, let httpResponse = urlResponse as? HTTPURLResponse {
+        do {
+            let (data, urlResponse) = try objcPerformAsync { [request] in
+                try await NetMockCaptureURLProtocol.session.data(for: request)
+            }
+            
+            client?.urlProtocol(self, didReceive: urlResponse, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+            
+            if let url, let httpResponse = urlResponse as? HTTPURLResponse {
+                objcPerformAsync {
                     await DocumentStore.shared.add(.init(method: method, url: url, statusCode: httpResponse.statusCode, body: data))
                 }
-            } catch {
-                client?.urlProtocol(self, didFailWithError: error)
             }
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
         }
     }
     

@@ -9,17 +9,6 @@ import Foundation
 
 /// Apply this to the URLSessionConfiguration to send URL requests with nm files present through NetMock.
 public class NetMockURLProtocol: URLProtocol {
-    static func withNetMock<T: Sendable>(_ perform: @Sendable @escaping (isolated NetMock) -> T) -> T {
-        nonisolated(unsafe) var result: T!
-        let semaphore = DispatchSemaphore(value: 0)
-        let netMock = NetMock.shared
-        Task {
-            result = await perform(netMock)
-            semaphore.signal()
-        }
-        semaphore.wait()
-        return result
-    }
     
     override public class func canInit(with task: URLSessionTask) -> Bool {
         if let request = task.currentRequest ?? task.originalRequest {
@@ -30,8 +19,8 @@ public class NetMockURLProtocol: URLProtocol {
     }
     
     override public class func canInit(with request: URLRequest) -> Bool {
-        withNetMock { netMock in
-            netMock.shouldHandle(request)
+        objcPerformAsync {
+            await NetMock.shared.shouldHandle(request)
         }
     }
     
@@ -44,7 +33,7 @@ public class NetMockURLProtocol: URLProtocol {
     }
     
     override public func startLoading() {
-        guard let response = Self.withNetMock({ [request] in $0.mockResponse(for: request) }) else {
+        guard let response = objcPerformAsync({ [request] in await NetMock.shared.mockResponse(for: request) }) else {
             client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
             return
         }
